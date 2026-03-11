@@ -1,0 +1,84 @@
+import 'package:flutter/material.dart';
+import '../screens/welcome_screen.dart';
+import '../screens/country_selection_screen.dart';
+import '../screens/home_screen.dart';
+import '../screens/add_subject_screen.dart';
+import '../screens/reminders_screen.dart';
+import '../screens/add_reminder_screen.dart';
+import '../screens/settings_screen.dart';
+import '../models/subject.dart';
+import '../models/reminder.dart';
+
+class Routes {
+  static const String welcome = '/welcome';
+  static const String countrySelection = '/country-selection';
+  static const String home = '/home';
+  static const String addSubject = '/add-subject';
+  static const String reminders = '/reminders';
+  static const String addReminder = '/add-reminder';
+  static const String settings = '/settings';
+}
+
+Route<dynamic> generateRoute(RouteSettings settings) {
+  switch (settings.name) {
+    case Routes.welcome:
+      return _slide(const WelcomeScreen());
+
+    case Routes.countrySelection:
+      return _slide(const CountrySelectionScreen());
+
+    case Routes.home:
+      return _fade(const HomeScreen());
+
+    case Routes.addSubject:
+      final subject = settings.arguments as Subject?;
+      return _slide(AddSubjectScreen(subject: subject));
+
+    case Routes.reminders:
+      return _slide(const RemindersScreen());
+
+    case Routes.addReminder:
+      final reminder = settings.arguments as Reminder?;
+      return _slide(AddReminderScreen(reminder: reminder));
+
+    case Routes.settings:
+      return _slide(const SettingsScreen());
+
+    default:
+      return _slide(const HomeScreen());
+  }
+}
+
+PageRouteBuilder _slide(Widget page) {
+  return PageRouteBuilder(
+    pageBuilder: (_, animation, __) => page,
+    transitionDuration: const Duration(milliseconds: 400),
+    transitionsBuilder: (_, animation, __, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      );
+    },
+  );
+}
+
+PageRouteBuilder _fade(Widget page) {
+  return PageRouteBuilder(
+    pageBuilder: (_, animation, __) => page,
+    transitionDuration: const Duration(milliseconds: 400),
+    transitionsBuilder: (_, animation, __, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
+      return FadeTransition(opacity: curved, child: child);
+    },
+  );
+}
