@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 4x1 — wide horizontal bar (~240×56dp)
+     Premium Apple/Samsung UI style: white rounded card.
+     [DAYS micro + big number] | [days to Spring Break label] | [progress ring] | [branding] -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_card_bg"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <!-- Left section: DAYS micro-label + large days number, stacked -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:layout_marginEnd="14dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="DAYS"
+            android:textSize="8sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:textColor="#FFA89888"
+            android:fontFamily="sans-serif"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/tv_days"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textSize="34sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="#FF6F4E37"
+            android:includeFontPadding="false"
+            android:lineSpacingExtra="-2sp" />
+
+    </LinearLayout>
+
+    <!-- Center: multi-line break label — takes remaining space -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="start"
+        android:layout_marginEnd="14dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="days to"
+            android:textSize="12sp"
+            android:textColor="#FFA89888"
+            android:fontFamily="sans-serif"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/tv_break_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Spring Break"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="#FF4A3728"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:lineSpacingMultiplier="1.05" />
+
+    </LinearLayout>
+
+    <!-- Right section: progress ring + branding, stacked vertically -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <!-- Progress ring — compact -->
+        <RelativeLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/widget_ring_track"
+                android:scaleType="fitXY"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/widget_ring"
+                android:scaleType="fitXY"
+                android:contentDescription="@null" />
+
+            <TextView
+                android:id="@+id/tv_progress"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="--%"
+                android:textSize="8sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-condensed"
+                android:textColor="#FF6F4E37"
+                android:includeFontPadding="false" />
+
+        </RelativeLayout>
+
+        <!-- Branding badge — small, muted -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:text="☕ BREAKCOUNT"
+            android:textSize="6sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.06"
+            android:textColor="#FFA89888"
+            android:fontFamily="sans-serif"
+            android:includeFontPadding="false" />
+
+    </LinearLayout>
+
+    <!-- Hidden summer days text — populated by Kotlin, not shown in 4x1 layout -->
+    <TextView
+        android:id="@+id/tv_summer_days"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        android:text="--" />
+
+    <!-- Hidden ProgressBar — Kotlin setProgressBar() compat -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        android:max="100"
+        android:progress="0" />
+
+</LinearLayout>

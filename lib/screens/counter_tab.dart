@@ -7,6 +7,7 @@ import '../models/school_year.dart';
 import '../services/storage_service.dart';
 import '../services/school_data_service.dart';
 import '../services/calculator_service.dart';
+import '../services/calendar_service.dart';
 import '../widgets/animated_counter.dart';
 import '../widgets/progress_ring.dart';
 import '../widgets/glassmorphic_card.dart';
@@ -43,7 +44,9 @@ class _CounterTabState extends State<CounterTab>
       _schoolYear = data;
       _loading = false;
     });
-    if (data != null) _startTimer();
+    if (data != null) {
+      _startTimer();
+    }
   }
 
   void _startTimer() {
@@ -135,7 +138,6 @@ class _CounterTabState extends State<CounterTab>
     final onBreak = CalculatorService.isOnBreak(sy);
     final yearOver = CalculatorService.isYearOver(sy);
     final stats = CalculatorService.getDayStats(sy);
-    final currentSemester = CalculatorService.currentSemester(sy);
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
@@ -224,15 +226,15 @@ class _CounterTabState extends State<CounterTab>
                       ),
                     if (yearOver) _buildYearOverBadge(),
                     const SizedBox(height: AppSpacing.xxl),
-                    if (currentSemester != null)
+                    if (!yearOver)
                       ProgressRing(
-                        progress: currentSemester.progress,
+                        progress: sy.yearProgress,
                         size: 176,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              '${(currentSemester.progress * 100).round()}%',
+                              '${(sy.yearProgress * 100).round()}%',
                               style: GoogleFonts.outfit(
                                 fontSize: 30,
                                 fontWeight: FontWeight.w700,
@@ -242,7 +244,7 @@ class _CounterTabState extends State<CounterTab>
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              currentSemester.name,
+                              'School Year',
                               style: GoogleFonts.outfit(
                                 fontSize: 11,
                                 color: AppColors.textTertiary,
@@ -476,14 +478,31 @@ class _CounterTabState extends State<CounterTab>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ALL BREAKS',
-            style: GoogleFonts.outfit(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textTertiary,
-              letterSpacing: 1.2,
-            ),
+          Row(
+            children: [
+              Text(
+                'ALL BREAKS',
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textTertiary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => CalendarService.exportBreaks(sy),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.calendar_month_outlined,
+                      size: 15, color: AppColors.primary),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.md),
           BreakTimeline(

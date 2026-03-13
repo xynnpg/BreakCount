@@ -73,6 +73,43 @@
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
 
+        <!-- BreakCount home screen widgets -->
+        <receiver
+            android:name="com.breakcount.app.BreakCountWidget2x1Provider"
+            android:exported="true"
+            android:label="BreakCount 2x1">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/breakcount_widget_2x1_info" />
+        </receiver>
+
+        <receiver
+            android:name="com.breakcount.app.BreakCountWidget2x2Provider"
+            android:exported="true"
+            android:label="BreakCount 2x2">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/breakcount_widget_2x2_info" />
+        </receiver>
+
+        <receiver
+            android:name="com.breakcount.app.BreakCountWidget4x1Provider"
+            android:exported="true"
+            android:label="BreakCount 4x1">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/breakcount_widget_4x1_info" />
+        </receiver>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

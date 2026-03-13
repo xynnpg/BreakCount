@@ -66,6 +66,8 @@ class _ScheduleTabState extends State<ScheduleTab>
     // Cloudflare Worker proxy (5 free scans/day).
     final rawKey = StorageService.getString(StorageKeys.aiApiKey) ?? '';
     final apiKey = rawKey.trim().isEmpty ? null : rawKey.trim();
+    final country =
+        StorageService.getString(StorageKeys.selectedCountry) ?? 'Romania';
 
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -87,6 +89,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     final result = await AiScheduleService.parseImage(
       File(picked.path),
       apiKey,
+      country: country,
       onError: (msg) => aiError = msg,
     );
 
@@ -105,7 +108,9 @@ class _ScheduleTabState extends State<ScheduleTab>
 
     final edited = await Navigator.push<AiScheduleResult>(
       context,
-      MaterialPageRoute(builder: (_) => AiReviewScreen(initialResult: result)),
+      MaterialPageRoute(
+          builder: (_) => AiReviewScreen(
+              initialResult: result, country: country)),
     );
     if (edited == null || !mounted) return;
 

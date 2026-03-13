@@ -6,14 +6,27 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:home_widget/home_widget.dart';
 import 'app/constants.dart';
 import 'app/routes.dart';
 import 'app/theme.dart';
 import 'app/theme_preset.dart';
 import 'services/fcm_service.dart';
 import 'services/notification_service.dart';
+import 'services/break_notification_service.dart';
 import 'services/reminder_service.dart';
 import 'services/storage_service.dart';
+import 'services/widget_service.dart';
+import 'utils/debug_log.dart';
+
+/// Called by the Android widget host when a widget interaction triggers
+/// a background Dart execution (e.g. button tap on the widget).
+@pragma('vm:entry-point')
+Future<void> backgroundWidgetCallback(Uri? uri) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await StorageService.init();
+  await WidgetService.update();
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,8 +55,11 @@ void main() async {
       .setAnalyticsCollectionEnabled(!kDebugMode);
 
   await StorageService.init();
+  // ignore: deprecated_member_use
+  HomeWidget.registerBackgroundCallback(backgroundWidgetCallback);
   await NotificationService.initTimezone();
   await NotificationService.init();
+  await BreakNotificationService.init();
 
   AppThemeController.init(StorageService.getString(StorageKeys.themeId));
 
@@ -53,9 +69,30 @@ void main() async {
   }
 
   FcmService.init(); // fire-and-forget
+  WidgetService.update(); // fire-and-forget
 
   final isOnboarded =
       StorageService.getBool(StorageKeys.isOnboarded) ?? false;
+
+  // ── Debug startup dump ───────────────────────────────────────────────────
+  dLogBlock('BreakCount startup', {
+    'build': kDebugMode ? 'DEBUG' : 'RELEASE',
+    'onboarded': isOnboarded,
+    'country': StorageService.getString(StorageKeys.selectedCountry) ?? '(none)',
+    'theme': StorageService.getString(StorageKeys.themeId) ?? '(default)',
+    'lastBackup': StorageService.getString(StorageKeys.lastBackupTime) ?? '(never)',
+    'notifications': StorageService.getBool(StorageKeys.notificationsEnabled),
+    'breakNotifs': StorageService.getBool(StorageKeys.breakNotificationsEnabled),
+    'groqKey': (StorageService.getString(StorageKeys.groqApiKey)?.isNotEmpty == true)
+        ? '*** set ***'
+        : '(not set)',
+    'deviceId': StorageService.getString(StorageKeys.deviceId) ?? '(none)',
+    'scheduleEntries': () {
+      final raw = StorageService.getString(StorageKeys.schedule);
+      if (raw == null) return '(none)';
+      return '${raw.length} bytes stored';
+    }(),
+  });
 
   // Wrap runApp in a zone to catch all uncaught async errors.
   runZonedGuarded(
@@ -95,7 +132,7 @@ class _BreakCountAppState extends State<BreakCountApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'BreakCount',
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: kDebugMode,
       theme: AppTheme.build(AppThemeController.current),
       initialRoute: widget.initialRoute,
       onGenerateRoute: generateRoute,

@@ -4,48 +4,41 @@ import '../app/constants.dart';
 import '../models/schedule.dart';
 import '../models/subject.dart';
 import '../services/ai_schedule_service.dart';
-import '../widgets/glassmorphic_card.dart';
+import '../data/subject_suggestions.dart';
+import '../data/subject_colors.dart';
 
-// ── Mutable entry for editing ────────────────────────────────────────────────
+// ── Mutable entry for editing ─────────────────────────────────────────────────
 
-/// Mutable flat representation of one AI-detected class for editing.
 class _ReviewEntry {
   final String key;
-  final TextEditingController nameController;
+  String name;
   int day; // 1–5
-  int startHour;
-  int startMinute;
-  int endHour;
-  int endMinute;
+  int startHour, startMinute, endHour, endMinute;
   int colorValue;
-  String? teacher;
 
   _ReviewEntry({
-    required String name,
+    required this.name,
     required this.day,
     required this.startHour,
     required this.startMinute,
     required this.endHour,
     required this.endMinute,
     required this.colorValue,
-    this.teacher,
     String? key,
-  })  : key = key ?? '${DateTime.now().microsecondsSinceEpoch}_${name.hashCode}',
-        nameController = TextEditingController(text: name);
-
-  String get name => nameController.text.trim();
-
-  void dispose() => nameController.dispose();
+  }) : key = key ?? '${DateTime.now().microsecondsSinceEpoch}_${name.hashCode}';
 }
 
-// ── Screen ───────────────────────────────────────────────────────────────────
+// ── Screen ────────────────────────────────────────────────────────────────────
 
-/// Day-by-day wizard for reviewing and editing an AI-scanned timetable.
-/// Compatible with the same constructor signature as before.
 class AiReviewScreen extends StatefulWidget {
   final AiScheduleResult initialResult;
+  final String country;
 
-  const AiReviewScreen({super.key, required this.initialResult});
+  const AiReviewScreen({
+    super.key,
+    required this.initialResult,
+    this.country = 'Romania',
+  });
 
   @override
   State<AiReviewScreen> createState() => _AiReviewScreenState();
@@ -53,134 +46,134 @@ class AiReviewScreen extends StatefulWidget {
 
 class _AiReviewScreenState extends State<AiReviewScreen> {
   late List<_ReviewEntry> _entries;
-  int _step = 0; // 0–4 = Mon–Fri, 5 = confirm screen
+  late List<String> _suggestions;
+  int _step = 0; // 0–4 = Mon–Fri, 5 = confirm
 
-  static const List<String> _dayNames = [
+  static const _dayNames = [
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'
   ];
-
-  static const List<int> _subjectColors = AppColors.subjectColors;
 
   @override
   void initState() {
     super.initState();
-    final srcEntries = widget.initialResult.entries;
+    _suggestions = getSuggestionsForCountry(widget.country);
+    final src = widget.initialResult.entries;
     _entries = [
-      for (int i = 0; i < srcEntries.length; i++)
-        () {
-          final entry = srcEntries[i];
-          final subject = widget.initialResult.subjects.firstWhere(
-            (s) => s.id == entry.subjectId,
-            orElse: () => Subject(id: '', name: '?', colorValue: 0xFF6F4E37),
-          );
-          return _ReviewEntry(
-            name: subject.name,
-            day: entry.dayOfWeek,
-            startHour: entry.startTime.hour,
-            startMinute: entry.startTime.minute,
-            endHour: entry.endTime.hour,
-            endMinute: entry.endTime.minute,
-            colorValue: subject.colorValue,
-            teacher: subject.teacher,
-            key: 'init_${entry.id}_$i',
-          );
-        }(),
+      for (int i = 0; i < src.length; i++) () {
+        final e = src[i];
+        final s = widget.initialResult.subjects.firstWhere(
+          (s) => s.id == e.subjectId,
+          orElse: () => Subject(id: '', name: '?', colorValue: 0xFF6F4E37),
+        );
+        return _ReviewEntry(
+          name: s.name,
+          day: e.dayOfWeek,
+          startHour: e.startTime.hour,
+          startMinute: e.startTime.minute,
+          endHour: e.endTime.hour,
+          endMinute: e.endTime.minute,
+          colorValue: s.colorValue,
+          key: 'init_${e.id}_$i',
+        );
+      }(),
     ];
   }
 
-  @override
-  void dispose() {
-    for (final e in _entries) {
-      e.dispose();
-    }
-    super.dispose();
-  }
-
-  List<_ReviewEntry> _entriesForDay(int day) =>
+  List<_ReviewEntry> _forDay(int day) =>
       _entries.where((e) => e.day == day).toList();
 
-  void _deleteEntry(String key) {
-    setState(() => _entries.removeWhere((e) => e.key == key));
-  }
+  void _delete(String key) =>
+      setState(() => _entries.removeWhere((e) => e.key == key));
 
   void _addEntry(int day) {
+    final color = _suggestions.isNotEmpty
+        ? subjectDifficultyColor(_suggestions[0])
+        : 0xFF6F4E37;
     setState(() {
       _entries.add(_ReviewEntry(
         name: '',
         day: day,
-        startHour: 8,
-        startMinute: 0,
-        endHour: 8,
-        endMinute: 50,
-        colorValue: _subjectColors[_entries.length % _subjectColors.length],
+        startHour: 8, startMinute: 0,
+        endHour: 8, endMinute: 50,
+        colorValue: color,
         key: 'new_${DateTime.now().microsecondsSinceEpoch}',
       ));
     });
   }
 
-  Future<void> _pickTime(_ReviewEntry entry, bool isStart) async {
-    final initial = TimeOfDay(
-      hour: isStart ? entry.startHour : entry.endHour,
-      minute: isStart ? entry.startMinute : entry.endMinute,
-    );
-    final picked = await showTimePicker(
+  Future<void> _editName(_ReviewEntry entry) async {
+    final ctrl = TextEditingController(text: entry.name);
+    final result = await showModalBottomSheet<String>(
       context: context,
-      initialTime: initial,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _NameEditSheet(
+        controller: ctrl,
+        suggestions: _suggestions,
+      ),
     );
-    if (picked == null) return;
+    ctrl.dispose();
+    if (result == null || !mounted) return;
+    final name = result.trim().isEmpty ? entry.name : result.trim();
     setState(() {
-      if (isStart) {
-        entry.startHour = picked.hour;
-        entry.startMinute = picked.minute;
-      } else {
-        entry.endHour = picked.hour;
-        entry.endMinute = picked.minute;
-      }
+      entry.name = name;
+      entry.colorValue = subjectDifficultyColor(name);
     });
   }
 
-  /// Converts the edited entries back into an AiScheduleResult.
+  Future<void> _pickTime(_ReviewEntry entry) async {
+    final start = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: entry.startHour, minute: entry.startMinute),
+      helpText: 'Start time',
+    );
+    if (start == null || !mounted) return;
+    final end = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: entry.endHour, minute: entry.endMinute),
+      helpText: 'End time',
+    );
+    if (end == null) return;
+    setState(() {
+      entry.startHour = start.hour; entry.startMinute = start.minute;
+      entry.endHour = end.hour; entry.endMinute = end.minute;
+    });
+  }
+
+  void _cycleColor(_ReviewEntry entry) {
+    final colors = AppColors.subjectColors;
+    final idx = colors.indexOf(entry.colorValue);
+    setState(() => entry.colorValue = colors[(idx + 1) % colors.length]);
+  }
+
   AiScheduleResult _buildResult() {
-    final subjectCache = <String, Subject>{};
+    final cache = <String, Subject>{};
     final subjects = <Subject>[];
     final entries = <ScheduleEntry>[];
-
     for (int i = 0; i < _entries.length; i++) {
       final e = _entries[i];
       final name = e.name.isEmpty ? 'Unknown' : e.name;
-      final cacheKey = name.toLowerCase();
-
-      Subject? subject = subjectCache[cacheKey];
-      if (subject == null) {
-        subject = Subject(
+      final key = name.toLowerCase();
+      Subject? subj = cache[key];
+      if (subj == null) {
+        subj = Subject(
           id: 'ai_subj_${DateTime.now().millisecondsSinceEpoch}_$i',
           name: name,
           colorValue: e.colorValue,
-          teacher: e.teacher,
         );
-        subjects.add(subject);
-        subjectCache[cacheKey] = subject;
+        subjects.add(subj);
+        cache[key] = subj;
       }
-
       entries.add(ScheduleEntry(
         id: 'ai_entry_${DateTime.now().millisecondsSinceEpoch}_$i',
-        subjectId: subject.id,
+        subjectId: subj.id,
         dayOfWeek: e.day.clamp(1, 5),
         startTime: ScheduleTime(hour: e.startHour, minute: e.startMinute),
         endTime: ScheduleTime(hour: e.endHour, minute: e.endMinute),
         weekType: WeekType.both,
       ));
     }
-
     return AiScheduleResult(subjects: subjects, entries: entries);
-  }
-
-  void _goNext() {
-    if (_step < 5) setState(() => _step++);
-  }
-
-  void _goBack() {
-    if (_step > 0) setState(() => _step--);
   }
 
   @override
@@ -189,181 +182,145 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
     return _buildDayScreen(_step);
   }
 
-  // ── Day screen ─────────────────────────────────────────────────────────────
+  // ── Day screen ────────────────────────────────────────────────────────────
 
-  Widget _buildDayScreen(int dayIndex) {
-    final day = dayIndex + 1; // 1–5
-    final dayEntries = _entriesForDay(day);
-    final isLast = dayIndex == 4;
-    final nextLabel = isLast ? 'Review & Save' : 'Next: ${_dayNames[dayIndex + 1]}';
+  Widget _buildDayScreen(int dayIdx) {
+    final day = dayIdx + 1;
+    final dayEntries = _forDay(day);
+    final isLast = dayIdx == 4;
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
       body: SafeArea(
         child: Column(
           children: [
-            _buildDayHeader(dayIndex),
-            _buildProgressBar(dayIndex),
+            _buildHeader(dayIdx),
+            _buildProgress(dayIdx),
             Expanded(
               child: dayEntries.isEmpty
-                  ? _buildDayEmptyState(day)
+                  ? _buildEmpty()
                   : ListView.builder(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                       itemCount: dayEntries.length,
                       itemBuilder: (ctx, i) => _EntryCard(
                         entry: dayEntries[i],
-                        onDelete: () =>
-                            _deleteEntry(dayEntries[i].key),
-                        onPickStartTime: () =>
-                            _pickTime(dayEntries[i], true),
-                        onPickEndTime: () =>
-                            _pickTime(dayEntries[i], false),
-                        onChanged: () => setState(() {}),
+                        onDelete: () => _delete(dayEntries[i].key),
+                        onEditName: () => _editName(dayEntries[i]),
+                        onPickTime: () => _pickTime(dayEntries[i]),
+                        onCycleColor: () => _cycleColor(dayEntries[i]),
                       ),
                     ),
             ),
-            // Add class button
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: GestureDetector(
-                onTap: () => _addEntry(day),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: AppColors.primary.withAlpha(60)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.add_rounded,
-                          size: 18, color: AppColors.primary),
-                      const SizedBox(width: 6),
-                      Text(
-                        '+ Add class',
-                        style: GoogleFonts.outfit(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Navigation
-            _buildNavBar(
-              showBack: dayIndex > 0,
-              nextLabel: nextLabel,
-              onBack: _goBack,
-              onNext: _goNext,
-            ),
+            _buildAddButton(day),
+            _buildNavBar(dayIdx, isLast),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDayHeader(int dayIndex) {
+  Widget _buildHeader(int dayIdx) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
         children: [
           Text(
-            _dayNames[dayIndex],
+            _dayNames[dayIdx],
             style: GoogleFonts.outfit(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.5,
+              fontSize: 28, fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary, letterSpacing: -0.5,
             ),
           ),
           const Spacer(),
           Text(
-            '${dayIndex + 1} / 5',
+            '${dayIdx + 1}/5',
             style: GoogleFonts.outfit(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textTertiary,
-            ),
+                fontSize: 14, color: AppColors.textTertiary),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProgressBar(int currentStep) {
+  Widget _buildProgress(int step) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       child: Row(
-        children: List.generate(5, (i) {
-          final filled = i <= currentStep;
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(right: i < 4 ? 4 : 0),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                height: 4,
-                decoration: BoxDecoration(
-                  color: filled ? AppColors.primary : AppColors.surfaceBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+        children: List.generate(5, (i) => Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: i < 4 ? 4 : 0),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              height: 4,
+              decoration: BoxDecoration(
+                color: i <= step ? AppColors.primary : AppColors.surfaceBorder,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          );
-        }),
+          ),
+        )),
       ),
     );
   }
 
-  Widget _buildDayEmptyState(int day) {
+  Widget _buildEmpty() {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 64, height: 64,
             decoration: const BoxDecoration(
-              color: AppColors.primaryLight,
-              shape: BoxShape.circle,
-            ),
+              color: AppColors.primaryLight, shape: BoxShape.circle),
             child: const Icon(Icons.free_breakfast_outlined,
                 size: 28, color: AppColors.primary),
           ),
           const SizedBox(height: 16),
-          Text(
-            'Free day',
-            style: GoogleFonts.outfit(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text('Free day',
+              style: GoogleFonts.outfit(
+                  fontSize: 17, fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary)),
           const SizedBox(height: 4),
-          Text(
-            'No classes — tap "+ Add class" to add one',
-            style: GoogleFonts.outfit(
-                fontSize: 13, color: AppColors.textTertiary),
-          ),
+          Text('Tap "+ Add class" to add one',
+              style: GoogleFonts.outfit(
+                  fontSize: 13, color: AppColors.textTertiary)),
         ],
       ),
     );
   }
 
-  Widget _buildNavBar({
-    required bool showBack,
-    required String nextLabel,
-    required VoidCallback onBack,
-    required VoidCallback onNext,
-  }) {
+  Widget _buildAddButton(int day) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: GestureDetector(
+        onTap: () => _addEntry(day),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.primary.withAlpha(60)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text('+ Add class',
+                  style: GoogleFonts.outfit(
+                      fontSize: 14, fontWeight: FontWeight.w600,
+                      color: AppColors.primary)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavBar(int dayIdx, bool isLast) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: const BoxDecoration(
@@ -372,16 +329,16 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
       ),
       child: Row(
         children: [
-          if (showBack)
+          if (dayIdx > 0)
             OutlinedButton.icon(
-              onPressed: onBack,
+              onPressed: () => setState(() => _step--),
               icon: const Icon(Icons.arrow_back_rounded, size: 16),
               label: const Text('Back'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
                 side: const BorderSide(color: AppColors.surfaceBorder),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 18, vertical: 12),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.lg)),
                 textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w500),
@@ -391,13 +348,15 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
             const SizedBox.shrink(),
           const Spacer(),
           FilledButton.icon(
-            onPressed: onNext,
+            onPressed: () => setState(() => _step++),
             icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: Text(nextLabel),
+            label: Text(isLast
+                ? 'Review & Save'
+                : 'Next: ${_dayNames[dayIdx + 1]}'),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.lg)),
               textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
@@ -408,7 +367,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
     );
   }
 
-  // ── Confirm screen (step 6) ─────────────────────────────────────────────────
+  // ── Confirm screen ────────────────────────────────────────────────────────
 
   Widget _buildConfirmScreen() {
     return Scaffold(
@@ -419,74 +378,54 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: _goBack,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.arrow_back_rounded,
-                            color: AppColors.textSecondary, size: 18),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Back',
-                          style: GoogleFonts.outfit(
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => setState(() => _step--),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.arrow_back_rounded,
+                        color: AppColors.textSecondary, size: 18),
+                    const SizedBox(width: 4),
+                    Text('Back',
+                        style: GoogleFonts.outfit(
                             color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Review Schedule',
+                            fontWeight: FontWeight.w500)),
+                  ]),
+                ),
+                const SizedBox(width: 16),
+                Text('Review Schedule',
                     style: GoogleFonts.outfit(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
+                        fontSize: 20, fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary)),
+              ]),
             ),
             Expanded(
               child: _entries.isEmpty
                   ? Center(
-                      child: Text(
-                        'No classes to import',
-                        style: GoogleFonts.outfit(color: AppColors.textTertiary),
-                      ),
-                    )
+                      child: Text('No classes to import',
+                          style: GoogleFonts.outfit(
+                              color: AppColors.textTertiary)))
                   : ListView(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                       children: [
-                        for (int dayIdx = 0; dayIdx < 5; dayIdx++) ...[
-                          if (_entriesForDay(dayIdx + 1).isNotEmpty) ...[
+                        for (int d = 0; d < 5; d++) ...[
+                          if (_forDay(d + 1).isNotEmpty) ...[
                             Padding(
-                              padding: const EdgeInsets.only(
-                                  top: 16, bottom: 8),
-                              child: Text(
-                                _dayNames[dayIdx],
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                ),
-                              ),
+                              padding:
+                                  const EdgeInsets.only(top: 16, bottom: 8),
+                              child: Text(_dayNames[d],
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary)),
                             ),
-                            ..._entriesForDay(dayIdx + 1).map(
-                              (e) => _ConfirmEntryRow(entry: e),
-                            ),
+                            ..._forDay(d + 1).map((e) => _ConfirmRow(entry: e)),
                           ],
                         ],
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                         Text(
                           '${_entries.length} class${_entries.length == 1 ? '' : 'es'} total',
                           style: GoogleFonts.outfit(
-                              color: AppColors.textTertiary, fontSize: 13),
+                              fontSize: 13, color: AppColors.textTertiary),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -529,16 +468,16 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
 class _EntryCard extends StatelessWidget {
   final _ReviewEntry entry;
   final VoidCallback onDelete;
-  final VoidCallback onPickStartTime;
-  final VoidCallback onPickEndTime;
-  final VoidCallback onChanged;
+  final VoidCallback onEditName;
+  final VoidCallback onPickTime;
+  final VoidCallback onCycleColor;
 
   const _EntryCard({
     required this.entry,
     required this.onDelete,
-    required this.onPickStartTime,
-    required this.onPickEndTime,
-    required this.onChanged,
+    required this.onEditName,
+    required this.onPickTime,
+    required this.onCycleColor,
   });
 
   String _fmt(int h, int m) =>
@@ -546,13 +485,14 @@ class _EntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subjectColor = Color(entry.colorValue);
+    final color = Color(entry.colorValue);
     return Dismissible(
       key: ValueKey(entry.key),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: AppColors.error.withAlpha(15),
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -562,108 +502,104 @@ class _EntryCard extends StatelessWidget {
             color: AppColors.error, size: 22),
       ),
       onDismissed: (_) => onDelete(),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: GlassmorphicCard(
-          animate: false,
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Color dot
-              Container(
-                width: 4,
-                height: 60,
-                margin: const EdgeInsets.only(right: 12, top: 2),
-                decoration: BoxDecoration(
-                  color: subjectColor,
-                  borderRadius: BorderRadius.circular(2),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.surfaceBorder),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x08000000),
+                blurRadius: 8,
+                offset: Offset(0, 2))
+          ],
+        ),
+        child: Row(
+          children: [
+            // Colored left bar — tap to cycle color
+            GestureDetector(
+              onTap: onCycleColor,
+              child: Tooltip(
+                message: 'Tap to change color',
+                child: Container(
+                  width: 6,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(AppRadius.lg),
+                      bottomLeft: Radius.circular(AppRadius.lg),
+                    ),
+                  ),
                 ),
               ),
-              // Fields
-              Expanded(
+            ),
+            const SizedBox(width: 12),
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextField(
-                      controller: entry.nameController,
-                      onChanged: (_) => onChanged(),
-                      style: GoogleFonts.outfit(
-                        color: AppColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Subject name',
-                        hintStyle: GoogleFonts.outfit(
-                            color: AppColors.textTertiary, fontSize: 14),
-                        isDense: true,
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        _Chip(
-                          label:
-                              '${_fmt(entry.startHour, entry.startMinute)} – ${_fmt(entry.endHour, entry.endMinute)}',
-                          onTap: onPickStartTime,
-                          icon: Icons.schedule_outlined,
+                    // Subject name — tap to edit
+                    GestureDetector(
+                      onTap: onEditName,
+                      child: Row(children: [
+                        Expanded(
+                          child: Text(
+                            entry.name.isEmpty
+                                ? 'Tap to set subject…'
+                                : entry.name,
+                            style: GoogleFonts.outfit(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: entry.name.isEmpty
+                                  ? AppColors.textTertiary
+                                  : AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ],
+                        const SizedBox(width: 4),
+                        const Icon(Icons.edit_outlined,
+                            size: 13, color: AppColors.textTertiary),
+                      ]),
+                    ),
+                    const SizedBox(height: 5),
+                    // Time row — tap to edit
+                    GestureDetector(
+                      onTap: onPickTime,
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.schedule_outlined,
+                            size: 13, color: AppColors.textTertiary),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${_fmt(entry.startHour, entry.startMinute)} – ${_fmt(entry.endHour, entry.endMinute)}',
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.edit_outlined,
+                            size: 11, color: AppColors.textTertiary),
+                      ]),
                     ),
                   ],
                 ),
               ),
-              // Delete button
-              GestureDetector(
-                onTap: onDelete,
-                child: const Padding(
-                  padding: EdgeInsets.only(left: 8, top: 2),
-                  child: Icon(Icons.close_rounded,
-                      size: 18, color: AppColors.textTertiary),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final IconData? icon;
-
-  const _Chip({required this.label, required this.onTap, this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.primaryLight,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppColors.primary.withAlpha(50)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 12, color: AppColors.primary),
-              const SizedBox(width: 4),
-            ],
-            Text(
-              label,
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w500,
+            ),
+            // Delete button
+            GestureDetector(
+              onTap: onDelete,
+              child: const Padding(
+                padding: EdgeInsets.all(12),
+                child: Icon(Icons.close_rounded,
+                    size: 18, color: AppColors.textTertiary),
               ),
             ),
           ],
@@ -673,61 +609,200 @@ class _Chip extends StatelessWidget {
   }
 }
 
-// ── Confirm entry row ─────────────────────────────────────────────────────────
+// ── Name Edit Bottom Sheet ────────────────────────────────────────────────────
 
-class _ConfirmEntryRow extends StatelessWidget {
+class _NameEditSheet extends StatefulWidget {
+  final TextEditingController controller;
+  final List<String> suggestions;
+
+  const _NameEditSheet({
+    required this.controller,
+    required this.suggestions,
+  });
+
+  @override
+  State<_NameEditSheet> createState() => _NameEditSheetState();
+}
+
+class _NameEditSheetState extends State<_NameEditSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottom),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Subject name',
+              style: GoogleFonts.outfit(
+                  fontSize: 16, fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: widget.controller,
+            autofocus: true,
+            onChanged: (_) => setState(() {}),
+            style: GoogleFonts.outfit(
+                fontSize: 15, color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'e.g. Matematică',
+              hintStyle: GoogleFonts.outfit(color: AppColors.textTertiary),
+              filled: true,
+              fillColor: AppColors.bgSurface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: const BorderSide(color: AppColors.surfaceBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: const BorderSide(color: AppColors.surfaceBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide:
+                    BorderSide(color: AppColors.primary.withAlpha(150)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 12),
+              suffixIcon: widget.controller.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear_rounded, size: 18),
+                      color: AppColors.textTertiary,
+                      onPressed: () {
+                        widget.controller.clear();
+                        setState(() {});
+                      },
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text('Suggestions',
+              style: GoogleFonts.outfit(
+                  fontSize: 13, fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 38,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: widget.suggestions.length,
+              separatorBuilder: (context2, i2) => const SizedBox(width: 8),
+              itemBuilder: (ctx, i) {
+                final s = widget.suggestions[i];
+                final selected = widget.controller.text == s;
+                return GestureDetector(
+                  onTap: () {
+                    widget.controller.text = s;
+                    widget.controller.selection = TextSelection.fromPosition(
+                        TextPosition(offset: s.length));
+                    setState(() {});
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: selected
+                            ? AppColors.primary
+                            : AppColors.primary.withAlpha(60),
+                      ),
+                    ),
+                    child: Text(
+                      s,
+                      style: GoogleFonts.outfit(
+                        fontSize: 13, fontWeight: FontWeight.w500,
+                        color: selected ? Colors.white : AppColors.primary,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton(
+              onPressed: () =>
+                  Navigator.pop(context, widget.controller.text),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg)),
+                textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+              ),
+              child: const Text('Done'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Confirm row ───────────────────────────────────────────────────────────────
+
+class _ConfirmRow extends StatelessWidget {
   final _ReviewEntry entry;
-  const _ConfirmEntryRow({required this.entry});
+  const _ConfirmRow({required this.entry});
 
   String _fmt(int h, int m) =>
       '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
-    final color = Color(entry.colorValue);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GlassmorphicCard(
-        animate: false,
-        padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
-        child: Row(
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.name.isEmpty ? 'Unknown' : entry.name,
-                    style: GoogleFonts.outfit(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (entry.teacher != null && entry.teacher!.isNotEmpty)
-                    Text(
-                      entry.teacher!,
-                      style: GoogleFonts.outfit(
-                          fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                ],
-              ),
-            ),
-            Text(
-              '${_fmt(entry.startHour, entry.startMinute)} – ${_fmt(entry.endHour, entry.endMinute)}',
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 16, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.surfaceBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 10, height: 10,
+            decoration: BoxDecoration(
+              color: Color(entry.colorValue), shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              entry.name.isEmpty ? 'Unknown' : entry.name,
               style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  color: AppColors.textTertiary,
-                  fontWeight: FontWeight.w500),
+                  fontSize: 14, fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary),
             ),
-          ],
-        ),
+          ),
+          Text(
+            '${_fmt(entry.startHour, entry.startMinute)} – ${_fmt(entry.endHour, entry.endMinute)}',
+            style: GoogleFonts.outfit(
+                fontSize: 12, color: AppColors.textTertiary,
+                fontWeight: FontWeight.w500),
+          ),
+        ],
       ),
     );
   }

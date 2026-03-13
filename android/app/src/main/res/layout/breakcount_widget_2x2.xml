@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2x2 — square bento card (~110×110dp)
+     Premium Apple/Samsung UI style: white rounded card.
+     Hero ring with days → label → progress bar → summer days -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_card_bg"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:paddingLeft="14dp"
+    android:paddingRight="14dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="10dp">
+
+    <!-- Hero progress ring — 80dp, days number centered inside -->
+    <RelativeLayout
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_gravity="center_horizontal">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/widget_ring_track"
+            android:scaleType="fitXY"
+            android:contentDescription="@null" />
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/widget_ring"
+            android:scaleType="fitXY"
+            android:contentDescription="@null" />
+
+        <!-- Big days number — perfectly centered -->
+        <TextView
+            android:id="@+id/tv_days"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="--"
+            android:textSize="34sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="#FF6F4E37"
+            android:includeFontPadding="false" />
+
+    </RelativeLayout>
+
+    <!-- "DAYS TO SPRING BREAK" label -->
+    <TextView
+        android:id="@+id/tv_break_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="DAYS TO SPRING BREAK"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:textAllCaps="true"
+        android:letterSpacing="0.04"
+        android:fontFamily="sans-serif-medium"
+        android:textColor="#FF4A3728"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:includeFontPadding="false" />
+
+    <!-- Year Progress row: label + percentage + bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical">
+
+        <!-- Label + percentage on same line -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Year Progress"
+                android:textSize="9sp"
+                android:textColor="#FFA89888"
+                android:fontFamily="sans-serif"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/tv_progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="--%"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:textColor="#FF6F4E37"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false" />
+
+        </LinearLayout>
+
+        <!-- Horizontal progress bar -->
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="4dp"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/widget_progress_bg" />
+
+    </LinearLayout>
+
+    <!-- Summer days — amber accent -->
+    <TextView
+        android:id="@+id/tv_summer_days"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:layout_gravity="center_horizontal"
+        android:text="★ -- days to summer"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:fontFamily="sans-serif"
+        android:textColor="#FFF59E0B"
+        android:gravity="center"
+        android:includeFontPadding="false" />
+
+</LinearLayout>

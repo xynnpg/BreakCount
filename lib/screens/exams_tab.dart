@@ -4,6 +4,7 @@ import '../app/constants.dart';
 import '../models/exam.dart';
 import '../models/subject.dart';
 import '../services/exam_service.dart';
+import '../services/calendar_service.dart';
 import '../services/schedule_service.dart';
 import '../services/storage_service.dart';
 import '../services/subject_importance_service.dart';
@@ -172,6 +173,8 @@ class _ExamsTabState extends State<ExamsTab> {
                         importance: _importance(entry.value),
                         onEdit: () => _openAddEdit(existing: entry.value),
                         onDelete: () => _delete(entry.value),
+                        onExport: () =>
+                            CalendarService.exportExam(entry.value),
                         animationDelay: entry.key * 60,
                       )),
                   if (_past.isNotEmpty) ...[
@@ -256,6 +259,7 @@ class _ExamCard extends StatelessWidget {
   final bool isPast;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback? onExport;
   final int animationDelay;
 
   const _ExamCard({
@@ -264,6 +268,7 @@ class _ExamCard extends StatelessWidget {
     this.isPast = false,
     required this.onEdit,
     required this.onDelete,
+    this.onExport,
     this.animationDelay = 0,
   });
 
@@ -408,6 +413,18 @@ class _ExamCard extends StatelessWidget {
                             const SizedBox(height: 8),
                             Row(
                               children: [
+                                if (!isPast && onExport != null)
+                                  GestureDetector(
+                                    onTap: onExport,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Icon(
+                                          Icons.calendar_month_outlined,
+                                          size: 16,
+                                          color: AppColors.primary
+                                              .withAlpha(160)),
+                                    ),
+                                  ),
                                 GestureDetector(
                                   onTap: onEdit,
                                   child: Padding(

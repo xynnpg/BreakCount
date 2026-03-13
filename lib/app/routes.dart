@@ -6,6 +6,7 @@ import '../screens/add_subject_screen.dart';
 import '../screens/reminders_screen.dart';
 import '../screens/add_reminder_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/stats_screen.dart';
 import '../models/subject.dart';
 import '../models/reminder.dart';
 
@@ -17,6 +18,7 @@ class Routes {
   static const String reminders = '/reminders';
   static const String addReminder = '/add-reminder';
   static const String settings = '/settings';
+  static const String stats = '/stats';
 }
 
 Route<dynamic> generateRoute(RouteSettings settings) {
@@ -44,6 +46,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case Routes.settings:
       return _slide(const SettingsScreen());
 
+    case Routes.stats:
+      return _slide(const StatsScreen());
+
     default:
       return _slide(const HomeScreen());
   }
@@ -51,9 +56,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
 
 PageRouteBuilder _slide(Widget page) {
   return PageRouteBuilder(
-    pageBuilder: (_, animation, __) => page,
+    pageBuilder: (ctx, animation, secondary) => page,
     transitionDuration: const Duration(milliseconds: 400),
-    transitionsBuilder: (_, animation, __, child) {
+    transitionsBuilder: (ctx, animation, secondary, child) {
       final curved = CurvedAnimation(
         parent: animation,
         curve: Curves.easeOutCubic,
@@ -71,9 +76,9 @@ PageRouteBuilder _slide(Widget page) {
 
 PageRouteBuilder _fade(Widget page) {
   return PageRouteBuilder(
-    pageBuilder: (_, animation, __) => page,
+    pageBuilder: (ctx, animation, secondary) => page,
     transitionDuration: const Duration(milliseconds: 400),
-    transitionsBuilder: (_, animation, __, child) {
+    transitionsBuilder: (ctx, animation, secondary, child) {
       final curved = CurvedAnimation(
         parent: animation,
         curve: Curves.easeOutCubic,

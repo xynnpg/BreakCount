@@ -4,6 +4,9 @@ import '../models/school_year.dart';
 import '../app/constants.dart';
 import '../data/local_school_data.dart';
 import 'storage_service.dart';
+import 'break_notification_service.dart';
+import 'widget_service.dart';
+import '../utils/debug_log.dart';
 
 class SchoolDataService {
   static const String _baseOpenHolidays = 'https://openholidaysapi.org';
@@ -13,20 +16,33 @@ class SchoolDataService {
   /// Fetches data for [country], caches it, and returns the result.
   /// Priority: 1) Local bundled data  2) OpenHolidays API.
   static Future<SchoolYear?> fetchAndCache(String country) async {
+    dLog('SchoolData', 'fetchAndCache → $country');
     try {
       SchoolYear? result;
 
       // 1. Try local bundled data first (verified, offline-friendly)
       result = LocalSchoolData.forCountry(country);
+      if (result != null) dLog('SchoolData', 'loaded from local bundle');
 
       // 2. Fall back to OpenHolidays API for countries not bundled locally
-      result ??= await _fetchFromOpenHolidays(country);
+      if (result == null) {
+        dLog('SchoolData', 'not in local bundle → fetching OpenHolidays API');
+        result = await _fetchFromOpenHolidays(country);
+        if (result != null) dLog('SchoolData', 'OpenHolidays → OK (${result.breaks.length} breaks)');
+      }
 
       if (result != null) {
         await StorageService.saveString(
             StorageKeys.schoolYear, result.toJsonString());
         await StorageService.saveString(
             StorageKeys.lastUpdated, DateTime.now().toIso8601String());
+        final breakNotifsEnabled =
+            StorageService.getBool(StorageKeys.breakNotificationsEnabled) ??
+                true;
+        if (breakNotifsEnabled) {
+          await BreakNotificationService.scheduleBreakNotifications(result);
+        }
+        WidgetService.update(); // fire-and-forget after fresh data
       }
       return result;
     } catch (_) {

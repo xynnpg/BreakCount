@@ -103,18 +103,44 @@ class StorageKeys {
   static const String groqApiKey = 'groq_api_key';
   static const String deviceId = 'device_id';
   static const String themeId = 'theme_id';
+  static const String breakNotificationsEnabled = 'break_notifications_enabled';
+  static const String lastBackupTime = 'last_backup_time';
 }
 
-/// Countries available in the SchoolYear GitHub API
+/// Countries with locally bundled, verified school year data (2025-2026).
+/// These fall back to the OpenHolidays API if not found locally.
 const List<String> schoolYearCountries = [
-  'Romania',
+  'Australia',
+  'Austria',
+  'Belgium',
+  'Brazil',
+  'Canada',
+  'Croatia',
+  'Czech Republic',
+  'Denmark',
+  'Estonia',
+  'Finland',
   'France',
   'Germany',
+  'Greece',
+  'Hungary',
+  'Ireland',
   'Italy',
   'Japan',
-  'Canada',
+  'Latvia',
+  'Lithuania',
+  'Luxembourg',
   'Mexico',
+  'Netherlands',
+  'Norway',
   'Poland',
+  'Portugal',
+  'Romania',
+  'Slovakia',
+  'Slovenia',
+  'Spain',
+  'Sweden',
+  'Switzerland',
   'Turkey',
   'United Kingdom',
   'Usa',

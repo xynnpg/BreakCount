@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ring track: light warm-tan oval stroke, transparent fill.
+     Used as the background layer behind widget_ring in all progress ring badges.
+     Safe for Samsung RemoteViews: single <shape>, no layer-list, no gradient. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <stroke
+        android:width="5dp"
+        android:color="#FFE8D5C4" />
+    <solid android:color="#00000000" />
+</shape>

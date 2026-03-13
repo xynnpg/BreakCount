@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app/constants.dart';
 import '../app/routes.dart';
 import '../services/storage_service.dart';
@@ -8,7 +9,11 @@ import '../services/school_data_service.dart';
 import '../services/schedule_service.dart';
 import '../services/reminder_service.dart';
 import '../services/notification_service.dart';
+import '../services/break_notification_service.dart';
+import '../services/backup_service.dart';
+import '../models/school_year.dart';
 import '../widgets/glassmorphic_card.dart';
+import '../widgets/backup_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -22,8 +27,14 @@ class _SettingsScreenState extends State<SettingsScreen>
   String _country = '';
   DateTime? _lastUpdated;
   bool _notificationsEnabled = true;
+  bool _breakNotificationsEnabled = true;
   bool _refreshing = false;
   String _aiApiKey = '';
+  bool _backupSignedIn = false;
+  String? _backupEmail;
+  DateTime? _lastBackupTime;
+  bool _backupBusy = false;
+  String? _backupError;
 
   @override
   bool get wantKeepAlive => true;
@@ -41,8 +52,27 @@ class _SettingsScreenState extends State<SettingsScreen>
       _lastUpdated = SchoolDataService.lastUpdated();
       _notificationsEnabled =
           StorageService.getBool(StorageKeys.notificationsEnabled) ?? true;
+      _breakNotificationsEnabled =
+          StorageService.getBool(StorageKeys.breakNotificationsEnabled) ?? true;
       _aiApiKey = StorageService.getString(StorageKeys.aiApiKey) ?? '';
     });
+    _loadBackupState();
+  }
+
+  Future<void> _loadBackupState() async {
+    final signedIn = await BackupService.isSignedIn();
+    final email = await BackupService.currentUserEmail();
+    final lastBackupRaw =
+        StorageService.getString(StorageKeys.lastBackupTime);
+    final lastBackup =
+        lastBackupRaw != null ? DateTime.tryParse(lastBackupRaw) : null;
+    if (mounted) {
+      setState(() {
+        _backupSignedIn = signedIn;
+        _backupEmail = email;
+        _lastBackupTime = lastBackup;
+      });
+    }
   }
 
   Future<void> _editAiApiKey() async {
@@ -240,6 +270,31 @@ class _SettingsScreenState extends State<SettingsScreen>
                           ),
                           _RowDivider(),
                           _SettingsRow(
+                            icon: Icons.event_outlined,
+                            label: 'Break Notifications',
+                            subtitle: 'Alerts 1 day before breaks start and end',
+                            trailing: Switch(
+                              value: _breakNotificationsEnabled,
+                              onChanged: (v) async {
+                                await StorageService.saveBool(
+                                    StorageKeys.breakNotificationsEnabled, v);
+                                setState(() => _breakNotificationsEnabled = v);
+                                final SchoolYear? sy =
+                                    SchoolDataService.getCached();
+                                if (sy != null) {
+                                  if (v) {
+                                    await BreakNotificationService
+                                        .scheduleBreakNotifications(sy);
+                                  } else {
+                                    await BreakNotificationService
+                                        .cancelBreakNotifications(sy);
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                          _RowDivider(),
+                          _SettingsRow(
                             icon: Icons.list_alt_outlined,
                             label: 'View Reminders',
                             trailing: const Icon(Icons.chevron_right,
@@ -271,6 +326,43 @@ class _SettingsScreenState extends State<SettingsScreen>
 
                     const SizedBox(height: AppSpacing.lg),
 
+                    // ── Statistics ────────────────────────────────────────────
+                    _SectionLabel('Statistics'),
+                    GlassmorphicCard(
+                      padding: EdgeInsets.zero,
+                      child: _SettingsRow(
+                        icon: Icons.bar_chart_rounded,
+                        label: 'Statistics',
+                        subtitle: 'School year progress & insights',
+                        trailing: const Icon(Icons.chevron_right,
+                            color: AppColors.textTertiary, size: 20),
+                        onTap: () =>
+                            Navigator.pushNamed(context, Routes.stats),
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // ── Backup & Restore ──────────────────────────────────────
+                    _SectionLabel('Backup & Restore'),
+                    GlassmorphicCard(
+                      padding: EdgeInsets.zero,
+                      child: _SettingsRow(
+                        icon: Icons.backup_outlined,
+                        label: 'Google Drive Backup',
+                        subtitle: _backupSignedIn
+                            ? (_lastBackupTime != null
+                                ? 'Last backup: ${DateFormat('d MMM yyyy').format(_lastBackupTime!)}'
+                                : _backupEmail ?? 'Signed in')
+                            : 'Not signed in',
+                        trailing: const Icon(Icons.chevron_right,
+                            color: AppColors.textTertiary, size: 20),
+                        onTap: _showBackupSheet,
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.lg),
+
                     // ── Data ─────────────────────────────────────────────────
                     _SectionLabel('Data'),
                     GlassmorphicCard(
@@ -285,6 +377,25 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ),
 
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // ── Support ───────────────────────────────────────────────
+                    _SectionLabel('Support'),
+                    GlassmorphicCard(
+                      padding: EdgeInsets.zero,
+                      child: _SettingsRow(
+                        icon: Icons.coffee_rounded,
+                        label: 'Buy Me a Coffee',
+                        subtitle: 'Support BreakCount development',
+                        trailing: const Icon(Icons.open_in_new,
+                            color: AppColors.textTertiary, size: 18),
+                        onTap: () => launchUrl(
+                          Uri.parse('https://buymeacoffee.com/xynnpg'),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                      ),
+                    ),
+
                     const SizedBox(height: AppSpacing.xxl),
                     _buildAbout(),
                     const SizedBox(height: 120),
@@ -294,6 +405,107 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showBackupSheet() async {
+    setState(() => _backupError = null);
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheet) => BackupSheet(
+          signedIn: _backupSignedIn,
+          email: _backupEmail,
+          lastBackupTime: _lastBackupTime,
+          busy: _backupBusy,
+          errorMessage: _backupError,
+          onSignIn: () async {
+            setSheet(() => _backupBusy = true);
+            setState(() => _backupBusy = true);
+            final nav = Navigator.of(ctx);
+            final result = await BackupService.signIn();
+            await _loadBackupState();
+            if (mounted) {
+              setState(() {
+                _backupBusy = false;
+                _backupError = result.success ? null : result.error;
+              });
+              setSheet(() {
+                _backupBusy = false;
+                _backupError = result.success ? null : result.error;
+              });
+              if (result.success) nav.pop();
+            }
+          },
+          onSignOut: () async {
+            final nav = Navigator.of(ctx);
+            await BackupService.signOut();
+            await _loadBackupState();
+            if (mounted) nav.pop();
+          },
+          onBackup: () async {
+            setSheet(() => _backupBusy = true);
+            setState(() => _backupBusy = true);
+            final nav = Navigator.of(ctx);
+            final messenger = ScaffoldMessenger.of(context);
+            final result = await BackupService.backup();
+            await _loadBackupState();
+            if (mounted) {
+              setState(() {
+                _backupBusy = false;
+                _backupError = result.success ? null : result.error;
+              });
+              setSheet(() {
+                _backupBusy = false;
+                _backupError = result.success ? null : result.error;
+              });
+              if (result.success) {
+                nav.pop();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Backup complete',
+                        style: GoogleFonts.outfit()),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              }
+            }
+          },
+          onRestore: () async {
+            setSheet(() => _backupBusy = true);
+            setState(() => _backupBusy = true);
+            final nav = Navigator.of(ctx);
+            final messenger = ScaffoldMessenger.of(context);
+            final result = await BackupService.restore();
+            if (mounted) {
+              setState(() {
+                _backupBusy = false;
+                _backupError = result.success ? null : result.error;
+              });
+              setSheet(() {
+                _backupBusy = false;
+                _backupError = result.success ? null : result.error;
+              });
+              if (result.success) {
+                nav.pop();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Restore complete',
+                        style: GoogleFonts.outfit()),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+                _load();
+              }
+            }
+          },
+        ),
       ),
     );
   }
