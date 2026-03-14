@@ -1,7 +1,7 @@
 name: breakcount
-description: "Countdown to your next school break"
+description: "BreakCount — countdown to your next school break, manage your schedule, and track exams."
 publish_to: 'none'
-version: 1.0.0
+version: 1.0.0+1
 
 environment:
   sdk: ^3.10.4
