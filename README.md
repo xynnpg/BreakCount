@@ -48,4 +48,3 @@ Keys are stored on-device only (SharedPreferences). They are never sent to any s
 
 ## License
 
-MIT
