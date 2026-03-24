@@ -233,7 +233,7 @@ Built with Flutter. Key pieces under the hood:
 
 ## Support the Project
 
-If BreakCount saves you from showing up unprepared to an exam, consider [buying me a coffee ☕](https://breakcount.tech).
+If BreakCount saves you from showing up unprepared to an exam, consider [buying me a coffee ☕](https://buymeacoffee.com/xynnpg).
 
 ---
 
