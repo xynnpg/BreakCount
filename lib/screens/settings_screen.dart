@@ -12,6 +12,7 @@ import '../services/notification_service.dart';
 import '../services/break_notification_service.dart';
 import '../services/backup_service.dart';
 import '../models/school_year.dart';
+import '../data/school_profiles_data.dart';
 import '../widgets/glassmorphic_card.dart';
 import '../widgets/backup_sheet.dart';
 
@@ -25,6 +26,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen>
     with AutomaticKeepAliveClientMixin {
   String _country = '';
+  String? _schoolProfileId;
   DateTime? _lastUpdated;
   bool _notificationsEnabled = true;
   bool _breakNotificationsEnabled = true;
@@ -35,6 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   DateTime? _lastBackupTime;
   bool _backupBusy = false;
   String? _backupError;
+  String _autoBackup = 'off';
 
   @override
   bool get wantKeepAlive => true;
@@ -49,12 +52,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     setState(() {
       _country =
           StorageService.getString(StorageKeys.selectedCountry) ?? 'Not set';
+      _schoolProfileId =
+          StorageService.getString(StorageKeys.schoolProfile);
       _lastUpdated = SchoolDataService.lastUpdated();
       _notificationsEnabled =
           StorageService.getBool(StorageKeys.notificationsEnabled) ?? true;
       _breakNotificationsEnabled =
           StorageService.getBool(StorageKeys.breakNotificationsEnabled) ?? true;
       _aiApiKey = StorageService.getString(StorageKeys.aiApiKey) ?? '';
+      _autoBackup = StorageService.getString(StorageKeys.autoBackup) ?? 'off';
     });
     _loadBackupState();
   }
@@ -120,6 +126,197 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (result == null || !mounted) return;
     await StorageService.saveString(StorageKeys.aiApiKey, result);
     setState(() => _aiApiKey = result);
+  }
+
+  Future<void> _selectProfile() async {
+    final countryKey = _country.toLowerCase();
+    final profiles = kSchoolProfiles
+        .where((p) => p.country == countryKey)
+        .toList();
+    if (profiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No profiles available for $_country',
+              style: GoogleFonts.outfit()),
+        ),
+      );
+      return;
+    }
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceBorder,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              'School Profile',
+              style: GoogleFonts.outfit(
+                fontSize: 18, fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, 4, AppSpacing.lg, 24),
+            itemCount: profiles.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 4),
+            itemBuilder: (_, i) {
+              final p = profiles[i];
+              final selected = _schoolProfileId == p.id;
+              return InkWell(
+                onTap: () {
+                  StorageService.saveString(
+                      StorageKeys.schoolProfile, p.id);
+                  setState(() => _schoolProfileId = p.id);
+                  Navigator.pop(ctx);
+                },
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.primaryLight
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: selected
+                        ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
+                        : null,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          p.displayName,
+                          style: GoogleFonts.outfit(
+                            fontSize: 15,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: selected
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (selected)
+                        const Icon(Icons.check_rounded,
+                            color: AppColors.primary, size: 18),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _setAutoBackup(String value) async {
+    await StorageService.saveString(StorageKeys.autoBackup, value);
+    setState(() => _autoBackup = value);
+  }
+
+  Future<void> _showAutoBackupPicker() async {
+    final options = [
+      ('off', 'Off', 'Manual backup only'),
+      ('daily', 'Daily', 'Backs up once every 24 hours'),
+      ('weekly', 'Weekly', 'Backs up once every 7 days'),
+      ('monthly', 'Monthly', 'Backs up once every 30 days'),
+    ];
+
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceBorder,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text('Auto-backup',
+                style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary)),
+          ),
+          const SizedBox(height: 8),
+          ...options.map((o) {
+            final selected = _autoBackup == o.$1;
+            return InkWell(
+              onTap: () {
+                _setAutoBackup(o.$1);
+                Navigator.pop(ctx);
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg, vertical: 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(o.$2,
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                fontWeight: selected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary,
+                              )),
+                          Text(o.$3,
+                              style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  color: AppColors.textTertiary)),
+                        ],
+                      ),
+                    ),
+                    if (selected)
+                      const Icon(Icons.check_rounded,
+                          color: AppColors.primary, size: 18),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
   }
 
   Future<void> _refreshData() async {
@@ -221,6 +418,26 @@ class _SettingsScreenState extends State<SettingsScreen>
                                   context, Routes.countrySelection);
                               _load();
                             },
+                          ),
+                          _RowDivider(),
+                          _SettingsRow(
+                            icon: Icons.school_outlined,
+                            label: 'School Profile',
+                            subtitle: () {
+                              if (_schoolProfileId == null) {
+                                return 'Not set — affects subject importance';
+                              }
+                              try {
+                                final p = kSchoolProfiles.firstWhere(
+                                    (p) => p.id == _schoolProfileId);
+                                return p.displayName;
+                              } catch (_) {
+                                return 'Not set';
+                              }
+                            }(),
+                            trailing: const Icon(Icons.chevron_right,
+                                color: AppColors.textTertiary, size: 20),
+                            onTap: _selectProfile,
                           ),
                           _RowDivider(),
                           _SettingsRow(
@@ -347,17 +564,35 @@ class _SettingsScreenState extends State<SettingsScreen>
                     _SectionLabel('Backup & Restore'),
                     GlassmorphicCard(
                       padding: EdgeInsets.zero,
-                      child: _SettingsRow(
-                        icon: Icons.backup_outlined,
-                        label: 'Google Drive Backup',
-                        subtitle: _backupSignedIn
-                            ? (_lastBackupTime != null
-                                ? 'Last backup: ${DateFormat('d MMM yyyy').format(_lastBackupTime!)}'
-                                : _backupEmail ?? 'Signed in')
-                            : 'Not signed in',
-                        trailing: const Icon(Icons.chevron_right,
-                            color: AppColors.textTertiary, size: 20),
-                        onTap: _showBackupSheet,
+                      child: Column(
+                        children: [
+                          _SettingsRow(
+                            icon: Icons.backup_outlined,
+                            label: 'Google Drive Backup',
+                            subtitle: _backupSignedIn
+                                ? (_lastBackupTime != null
+                                    ? 'Last backup: ${DateFormat('d MMM yyyy').format(_lastBackupTime!)}'
+                                    : _backupEmail ?? 'Signed in')
+                                : 'Not signed in',
+                            trailing: const Icon(Icons.chevron_right,
+                                color: AppColors.textTertiary, size: 20),
+                            onTap: _showBackupSheet,
+                          ),
+                          _RowDivider(),
+                          _SettingsRow(
+                            icon: Icons.schedule_outlined,
+                            label: 'Auto-backup',
+                            subtitle: switch (_autoBackup) {
+                              'daily' => 'Daily',
+                              'weekly' => 'Weekly',
+                              'monthly' => 'Monthly',
+                              _ => 'Off',
+                            },
+                            trailing: const Icon(Icons.chevron_right,
+                                color: AppColors.textTertiary, size: 20),
+                            onTap: _showAutoBackupPicker,
+                          ),
+                        ],
                       ),
                     ),
 
@@ -383,16 +618,32 @@ class _SettingsScreenState extends State<SettingsScreen>
                     _SectionLabel('Support'),
                     GlassmorphicCard(
                       padding: EdgeInsets.zero,
-                      child: _SettingsRow(
-                        icon: Icons.coffee_rounded,
-                        label: 'Buy Me a Coffee',
-                        subtitle: 'Support BreakCount development',
-                        trailing: const Icon(Icons.open_in_new,
-                            color: AppColors.textTertiary, size: 18),
-                        onTap: () => launchUrl(
-                          Uri.parse('https://buymeacoffee.com/xynnpg'),
-                          mode: LaunchMode.externalApplication,
-                        ),
+                      child: Column(
+                        children: [
+                          _SettingsRow(
+                            icon: Icons.code_rounded,
+                            label: 'GitHub',
+                            subtitle: 'View source & report issues',
+                            trailing: const Icon(Icons.open_in_new,
+                                color: AppColors.textTertiary, size: 18),
+                            onTap: () => launchUrl(
+                              Uri.parse('https://github.com/xynnpg/breakcount'),
+                              mode: LaunchMode.externalApplication,
+                            ),
+                          ),
+                          _RowDivider(),
+                          _SettingsRow(
+                            icon: Icons.coffee_rounded,
+                            label: 'Buy Me a Coffee',
+                            subtitle: 'Support BreakCount development',
+                            trailing: const Icon(Icons.open_in_new,
+                                color: AppColors.textTertiary, size: 18),
+                            onTap: () => launchUrl(
+                              Uri.parse('https://buymeacoffee.com/xynnpg'),
+                              mode: LaunchMode.externalApplication,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -522,7 +773,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               color: Colors.white,
             ),
             child: Text(
-              'BreakCount v1.0',
+              'BreakCount v2.0.1',
               style: GoogleFonts.outfit(
                   color: AppColors.textTertiary,
                   fontSize: 12,

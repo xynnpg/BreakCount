@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/country_selection_screen.dart';
+import '../screens/profile_selection_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/add_subject_screen.dart';
 import '../screens/reminders_screen.dart';
@@ -13,6 +14,7 @@ import '../models/reminder.dart';
 class Routes {
   static const String welcome = '/welcome';
   static const String countrySelection = '/country-selection';
+  static const String profileSelection = '/profile-selection';
   static const String home = '/home';
   static const String addSubject = '/add-subject';
   static const String reminders = '/reminders';
@@ -28,6 +30,10 @@ Route<dynamic> generateRoute(RouteSettings settings) {
 
     case Routes.countrySelection:
       return _slide(const CountrySelectionScreen());
+
+    case Routes.profileSelection:
+      final country = settings.arguments as String? ?? '';
+      return _slide(ProfileSelectionScreen(country: country));
 
     case Routes.home:
       return _fade(const HomeScreen());

@@ -23,6 +23,22 @@
 -keep class androidx.** { *; }
 -dontwarn androidx.**
 
+# flutter_local_notifications — alarm receivers must survive R8
+-keep class com.dexterous.flutterlocalnotifications.** { *; }
+
+# Gson — used by flutter_local_notifications to persist scheduled notifications
+# to SharedPreferences. Without these rules R8 renames TypeToken to 'a' and
+# loadScheduledNotifications() crashes with com.google.gson.reflect.a.<init>.
+-keep class com.google.gson.** { *; }
+-keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+-keepclassmembers,allowobfuscation class * {
+  @com.google.gson.annotations.SerializedName <fields>;
+}
+
 # App widget providers (must not be stripped)
 -keep class com.breakcount.app.BreakCountWidget** { *; }
 -keep class com.breakcount.app.MainActivity { *; }

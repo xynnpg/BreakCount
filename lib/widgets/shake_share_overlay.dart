@@ -86,8 +86,6 @@ class _ShakeMeshOverlayState extends State<ShakeMeshOverlay>
   }
 
   Future<void> _startMesh() async {
-    // Always stop first to clear any stale Nearby Connections state from
-    // a previous session that wasn't properly cleaned up.
     await MeshService.instance.stop();
     if (!mounted) return;
     final ok = await MeshService.instance.start();
@@ -115,11 +113,9 @@ class _ShakeMeshOverlayState extends State<ShakeMeshOverlay>
 
   void _onScheduleReceived(ReceivedSchedule received) {
     if (!mounted) return;
-    // Guard: ignore duplicate payloads while a confirmation dialog is already open
     if (_dialogShowing) return;
     _dialogShowing = true;
 
-    // Reset state so the device list is visible again while dialog shows
     if (_state == _OverlayState.connecting) {
       setState(() => _state = _OverlayState.devicesFound);
     }
@@ -203,8 +199,6 @@ class _ShakeMeshOverlayState extends State<ShakeMeshOverlay>
       if (mounted) _startMesh();
     });
   }
-
-  // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -511,8 +505,6 @@ class _ShakeMeshOverlayState extends State<ShakeMeshOverlay>
     }
   }
 }
-
-// ── Device Card ──────────────────────────────────────────────────────────────
 
 class _DeviceCard extends StatelessWidget {
   final NearbyDevice device;

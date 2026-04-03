@@ -27,10 +27,12 @@ It's built by a student, for students. No ads, no tracking, no nonsense.
 ## Features
 
 ### 📅 Countdown
-The main screen shows a big, satisfying countdown to your next school break — days, hours, minutes, seconds. There's also a school year progress ring so you always know exactly where you are in the year. Underneath, you'll see a timeline of every upcoming break so nothing sneaks up on you.
+The main screen shows a big countdown to your next school break. Tap the number to cycle the display through **days → hours → minutes → seconds → milliseconds** — useful when a break is close enough to feel every tick. There's also a school year progress ring so you always know exactly where you are in the year. Underneath, you'll see a timeline of every upcoming break so nothing sneaks up on you.
 
 ### 🗓️ Weekly Schedule
 A full Monday–Friday timetable grid. Add subjects with color-coding and room info, and BreakCount will show you what class you're in right now (or what's coming up next) directly on the home screen. Supports A/B week rotation for schools that alternate timetables.
+
+Each subject is automatically tagged with an **importance level** (Low / Medium / High / Critical) based on your country and school profile. These tags are country-specific — so "Matematică" in Romania and "Mathematics" in the UK both resolve correctly — and you can override any subject's level manually.
 
 ### 📝 Exams & Tests Tracker
 Add exams with a subject, date, type (quiz, midterm, final, presentation, etc.), and optional room or notes. Set a reminder — 1 day before, 2 days before, morning of, 2 hours before, or a custom time. Past exams automatically move out of your way. You can also export any exam straight to your phone's calendar.
@@ -108,9 +110,11 @@ When you first open BreakCount, you'll go through a short onboarding:
 
 1. A quick intro carousel explains the main features
 2. You pick your country from a searchable grid
-3. BreakCount fetches your school year data and caches it locally
-4. You grant whichever permissions you want (notifications, Bluetooth, etc.)
-5. You land on the home screen with your countdown already live
+3. You pick your **school profile** — the curriculum or institution type that matches your school (e.g. "Liceu Teoretic" for Romania). This sets smart subject importance defaults. You can skip this and stick with the generic country defaults
+4. BreakCount fetches your school year data and caches it locally
+5. You optionally connect a Google account to enable backup/restore
+6. You grant whichever permissions you want (notifications, Bluetooth, etc.)
+7. You land on the home screen with your countdown already live
 
 ---
 

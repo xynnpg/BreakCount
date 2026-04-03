@@ -24,6 +24,8 @@ const _backupKeys = [
   StorageKeys.accentColor,
   StorageKeys.useAlternatingWeeks,
   StorageKeys.currentWeekType,
+  StorageKeys.schoolProfile,
+  StorageKeys.themeId,
 ];
 
 final _googleSignIn = GoogleSignIn(

@@ -95,6 +95,30 @@ class CalculatorService {
     return woy;
   }
 
+  /// Counts weekdays from [from] (default: today) to [schoolYear.endDate]
+  /// that do not fall within any school break period.
+  static int activeSchoolDaysRemaining(
+    SchoolYear schoolYear, {
+    DateTime? from,
+  }) {
+    final start = (from ?? DateTime.now()).toLocal();
+    final end = schoolYear.endDate;
+    if (start.isAfter(end)) return 0;
+    int count = 0;
+    var cursor = DateTime(start.year, start.month, start.day);
+    while (!cursor.isAfter(end)) {
+      if (cursor.weekday <= DateTime.friday) {
+        final inBreak = schoolYear.breaks.any(
+          (b) =>
+              !cursor.isBefore(b.startDate) && !cursor.isAfter(b.endDate),
+        );
+        if (!inBreak) count++;
+      }
+      cursor = cursor.add(const Duration(days: 1));
+    }
+    return count;
+  }
+
   /// Format a Duration into {"days": d, "hours": h, "minutes": m, "seconds": s}
   static Map<String, int> formatCountdown(Duration duration) {
     if (duration.isNegative) {

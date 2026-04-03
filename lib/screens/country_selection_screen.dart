@@ -71,9 +71,9 @@ class _CountrySelectionScreenState extends State<CountrySelectionScreen> {
 
     await StorageService.saveString(
         StorageKeys.selectedCountry, _selectedCountry!);
-    await StorageService.saveBool(StorageKeys.isOnboarded, true);
 
-    navigator.pushReplacementNamed(Routes.home);
+    navigator.pushReplacementNamed(
+        Routes.profileSelection, arguments: _selectedCountry!);
   }
 
   @override

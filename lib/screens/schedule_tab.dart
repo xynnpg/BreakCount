@@ -9,6 +9,7 @@ import '../models/subject.dart';
 import '../services/storage_service.dart';
 import '../services/schedule_service.dart';
 import '../services/ai_schedule_service.dart';
+import '../services/notification_service.dart';
 import 'ai_review_screen.dart';
 import '../widgets/timetable_grid.dart';
 
@@ -178,8 +179,29 @@ class _ScheduleTabState extends State<ScheduleTab>
                         schedule: _schedule,
                         subjects: _subjects,
                         currentWeek: _currentWeek,
-                        onEntryTap: (entry) =>
-                            _onEntryTap(context, entry),
+                        onEntryTap: (entry) => _onEntryTap(context, entry),
+                        onEntryMoved: (entry, newDay, start, end) async {
+                          final conflict = _schedule.entries.where((e) =>
+                            e.id != entry.id &&
+                            e.dayOfWeek == newDay &&
+                            e.startTime.hour == start.hour
+                          ).toList();
+                          final updated = entry.copyWith(
+                              dayOfWeek: newDay, startTime: start, endTime: end);
+                          await ScheduleService.updateEntry(updated);
+                          if (conflict.isNotEmpty) {
+                            final old = entry.startTime;
+                            await ScheduleService.updateEntry(
+                              conflict.first.copyWith(
+                                dayOfWeek: entry.dayOfWeek,
+                                startTime: old,
+                                endTime: ScheduleTime(
+                                    hour: old.hour, minute: 50),
+                              ),
+                            );
+                          }
+                          _load();
+                        },
                       ),
               ),
             ],
@@ -273,6 +295,7 @@ class _ScheduleTabState extends State<ScheduleTab>
       ),
     );
   }
+
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
@@ -702,7 +725,7 @@ class _MergeDialog extends StatelessWidget {
 
 // ── Entry detail sheet ────────────────────────────────────────────────────────
 
-class _EntryDetailSheet extends StatelessWidget {
+class _EntryDetailSheet extends StatefulWidget {
   final ScheduleEntry entry;
   final Subject subject;
   final VoidCallback onDelete;
@@ -716,8 +739,50 @@ class _EntryDetailSheet extends StatelessWidget {
   });
 
   @override
+  State<_EntryDetailSheet> createState() => _EntryDetailSheetState();
+}
+
+class _EntryDetailSheetState extends State<_EntryDetailSheet> {
+  bool _notifyEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifState();
+  }
+
+  void _loadNotifState() {
+    final raw = StorageService.getString(StorageKeys.classNotifications) ?? '';
+    final ids = raw.isEmpty ? <String>[] : raw.split(',');
+    setState(() => _notifyEnabled = ids.contains(widget.entry.id));
+  }
+
+  Future<void> _toggleNotification(bool value) async {
+    final raw = StorageService.getString(StorageKeys.classNotifications) ?? '';
+    final ids = raw.isEmpty ? <String>[] : raw.split(',').toList();
+
+    if (value) {
+      if (!ids.contains(widget.entry.id)) ids.add(widget.entry.id);
+      await NotificationService.scheduleClassNotification(
+        widget.entry.id,
+        widget.subject.name,
+        widget.entry.dayOfWeek,
+        widget.entry.startTime.hour,
+        widget.entry.startTime.minute,
+      );
+    } else {
+      ids.remove(widget.entry.id);
+      await NotificationService.cancelClassNotification(widget.entry.id);
+    }
+
+    await StorageService.saveString(
+        StorageKeys.classNotifications, ids.join(','));
+    if (mounted) setState(() => _notifyEnabled = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = Color(subject.colorValue);
+    final color = Color(widget.subject.colorValue);
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -762,7 +827,7 @@ class _EntryDetailSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        subject.name,
+                        widget.subject.name,
                         style: GoogleFonts.outfit(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -770,7 +835,7 @@ class _EntryDetailSheet extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${entry.startTime.format24h()} – ${entry.endTime.format24h()}',
+                        '${widget.entry.startTime.format24h()} – ${widget.entry.endTime.format24h()}',
                         style: GoogleFonts.outfit(
                           fontSize: 13,
                           color: color,
@@ -783,12 +848,12 @@ class _EntryDetailSheet extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.edit_outlined,
                       color: AppColors.textSecondary, size: 20),
-                  onPressed: onEdit,
+                  onPressed: widget.onEdit,
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline,
                       color: AppColors.error, size: 20),
-                  onPressed: onDelete,
+                  onPressed: widget.onDelete,
                 ),
               ],
             ),
@@ -797,15 +862,37 @@ class _EntryDetailSheet extends StatelessWidget {
             const Divider(color: AppColors.surfaceBorder, height: 1),
             const SizedBox(height: AppSpacing.md),
 
-            if (subject.teacher != null)
-              _DetailRow(icon: Icons.person_outline, text: subject.teacher!),
-            if (entry.room != null || subject.room != null)
+            // Notification toggle
+            Row(
+              children: [
+                const Icon(Icons.notifications_outlined,
+                    size: 16, color: AppColors.textTertiary),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Notify 10 min before',
+                    style: GoogleFonts.outfit(
+                        color: AppColors.textSecondary, fontSize: 14),
+                  ),
+                ),
+                Switch(
+                  value: _notifyEnabled,
+                  onChanged: _toggleNotification,
+                  activeThumbColor: AppColors.primary,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+
+            if (widget.subject.teacher != null)
+              _DetailRow(icon: Icons.person_outline, text: widget.subject.teacher!),
+            if (widget.entry.room != null || widget.subject.room != null)
               _DetailRow(
                   icon: Icons.room_outlined,
-                  text: entry.room ?? subject.room!),
+                  text: widget.entry.room ?? widget.subject.room!),
             _DetailRow(
                 icon: Icons.calendar_today_outlined,
-                text: entry.weekType.label),
+                text: widget.entry.weekType.label),
             const SizedBox(height: AppSpacing.sm),
           ],
         ),
@@ -835,3 +922,4 @@ class _DetailRow extends StatelessWidget {
     );
   }
 }
+

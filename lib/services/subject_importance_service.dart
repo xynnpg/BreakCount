@@ -1,3 +1,5 @@
+import '../data/school_profiles_data.dart';
+
 enum SubjectImportance { low, medium, high, critical }
 
 extension SubjectImportanceExt on SubjectImportance {
@@ -17,11 +19,26 @@ extension SubjectImportanceExt on SubjectImportance {
 
 class SubjectImportanceService {
   /// Returns the importance level for a subject name in a given country.
+  /// If [profileId] is provided, profile-specific overrides take precedence.
   /// Falls back to generic English names if the country is not specifically mapped.
-  static SubjectImportance getImportance(String subjectName, String country) {
+  static SubjectImportance getImportance(
+    String subjectName,
+    String country, {
+    String? profileId,
+  }) {
     final key = subjectName.toLowerCase().trim();
-    final countryKey = country.toLowerCase().trim();
 
+    if (profileId != null) {
+      try {
+        final profile = kSchoolProfiles.firstWhere((p) => p.id == profileId);
+        final override = profile.overrides[key];
+        if (override != null) return override;
+      } catch (_) {
+        // profile not found — fall through
+      }
+    }
+
+    final countryKey = country.toLowerCase().trim();
     final countryMap = _countryMaps[countryKey];
     if (countryMap != null) {
       final result = countryMap[key];

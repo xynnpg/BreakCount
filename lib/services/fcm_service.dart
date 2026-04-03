@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../app/constants.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
@@ -7,7 +8,42 @@ import '../services/storage_service.dart';
 // Top-level background handler — must be top-level, not a class method.
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
-  debugPrint('FCM background message: ${message.messageId}');
+  WidgetsFlutterBinding.ensureInitialized();
+  final plugin = FlutterLocalNotificationsPlugin();
+  await plugin.initialize(
+    const InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    ),
+  );
+  final android = plugin.resolvePlatformSpecificImplementation<
+      AndroidFlutterLocalNotificationsPlugin>();
+  await android?.createNotificationChannel(const AndroidNotificationChannel(
+    'breakcount_announcements',
+    'Announcements',
+    description: 'News and updates from BreakCount',
+    importance: Importance.high,
+  ));
+  final title = message.notification?.title ??
+      message.data['title'] as String? ??
+      'BreakCount';
+  final body =
+      message.notification?.body ?? message.data['body'] as String? ?? '';
+  final id = message.messageId?.hashCode.abs() ??
+      DateTime.now().millisecondsSinceEpoch % 2147483647;
+  await plugin.show(
+    id,
+    title,
+    body,
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'breakcount_announcements',
+        'Announcements',
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      ),
+    ),
+  );
 }
 
 class FcmService {

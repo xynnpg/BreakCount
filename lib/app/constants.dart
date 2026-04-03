@@ -105,6 +105,9 @@ class StorageKeys {
   static const String themeId = 'theme_id';
   static const String breakNotificationsEnabled = 'break_notifications_enabled';
   static const String lastBackupTime = 'last_backup_time';
+  static const String classNotifications = 'class_notifications';
+  static const String schoolProfile = 'school_profile';
+  static const String autoBackup = 'auto_backup';
 }
 
 /// Countries with locally bundled, verified school year data (2025-2026).

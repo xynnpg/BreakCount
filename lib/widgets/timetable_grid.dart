@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/schedule.dart';
 import '../models/subject.dart';
 import '../app/constants.dart';
+import 'timetable_entry_block.dart';
 
 /// Weekly timetable grid — Monday to Friday, time slots as rows.
-/// Overlapping entries in the same day are laid out side-by-side (Google
-/// Calendar style) so they never render on top of each other.
-class TimetableGrid extends StatelessWidget {
+/// Supports true drag-and-drop via long-press: hold → overlay card follows
+/// finger → release snaps to X:00–X:50 slot in the target day.
+class TimetableGrid extends StatefulWidget {
   final Schedule schedule;
   final List<Subject> subjects;
   final WeekType currentWeek;
   final Function(ScheduleEntry)? onEntryTap;
+  final Function(ScheduleEntry, int newDay, ScheduleTime start, ScheduleTime end)?
+      onEntryMoved;
 
   const TimetableGrid({
     super.key,
@@ -19,8 +23,14 @@ class TimetableGrid extends StatelessWidget {
     required this.subjects,
     required this.currentWeek,
     this.onEntryTap,
+    this.onEntryMoved,
   });
 
+  @override
+  State<TimetableGrid> createState() => _TimetableGridState();
+}
+
+class _TimetableGridState extends State<TimetableGrid> {
   static const List<String> _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   static const double _hourHeight = 64.0;
   static const double _startHour = 7.0;
@@ -28,14 +38,170 @@ class TimetableGrid extends StatelessWidget {
   static const double _labelWidth = 40.0;
   static const double _dayWidth = 82.0;
 
+  ScheduleEntry? _draggingEntry;
+  String? _draggingEntryId;
+  OverlayEntry? _overlayEntry;
+  // ValueNotifier drives overlay position directly — no markNeedsBuild needed.
+  final ValueNotifier<Offset> _overlayPosNotifier = ValueNotifier(Offset.zero);
+  int _dragTargetHour = 7;
+  int _dragTargetDay = 1;
+
+  final ScrollController _hScrollCtrl = ScrollController();
+  final ScrollController _vScrollCtrl = ScrollController();
+  final GlobalKey _gridKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _overlayEntry?.remove();
+    _overlayPosNotifier.dispose();
+    _hScrollCtrl.dispose();
+    _vScrollCtrl.dispose();
+    super.dispose();
+  }
+
+  void _startDrag(ScheduleEntry entry, Offset initialPos) {
+    HapticFeedback.mediumImpact();
+    _computeTargetSlot(initialPos);
+    _overlayPosNotifier.value = initialPos;
+    setState(() {
+      _draggingEntry = entry;
+      _draggingEntryId = entry.id;
+    });
+    _overlayEntry = OverlayEntry(builder: (_) => _buildOverlay());
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _updateDrag(Offset globalPos) {
+    _computeTargetSlot(globalPos);
+    _overlayPosNotifier.value = globalPos;
+    _overlayEntry?.markNeedsBuild();
+    if (mounted) setState(() {});
+  }
+
+  void _endDrag(Offset globalPos) {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    final entry = _draggingEntry;
+    final day = _dragTargetDay;
+    final hour = _dragTargetHour;
+    setState(() {
+      _draggingEntry = null;
+      _draggingEntryId = null;
+    });
+    if (entry != null) {
+      final start = ScheduleTime(hour: hour, minute: 0);
+      final end = ScheduleTime(hour: hour, minute: 50);
+      widget.onEntryMoved?.call(entry, day, start, end);
+    }
+  }
+
+  void _cancelDrag() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    setState(() {
+      _draggingEntry = null;
+      _draggingEntryId = null;
+    });
+  }
+
+  // Pure computation — no setState, safe to call mid-gesture.
+  void _computeTargetSlot(Offset globalPos) {
+    final box = _gridKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final origin = box.localToGlobal(Offset.zero);
+    final localX = globalPos.dx - origin.dx;
+    final localY = globalPos.dy - origin.dy;
+    _dragTargetHour =
+        ((localY / _hourHeight) + _startHour).floor().clamp(7, 19);
+    _dragTargetDay =
+        ((localX - _labelWidth) / _dayWidth).floor().clamp(0, 4) + 1;
+  }
+
+  Widget _buildOverlay() {
+    final entry = _draggingEntry;
+    if (entry == null) return const SizedBox.shrink();
+    Subject? subject;
+    try {
+      subject = widget.subjects.firstWhere((s) => s.id == entry.subjectId);
+    } catch (_) {}
+    final color =
+        subject != null ? Color(subject.colorValue) : AppColors.primary;
+
+    return ValueListenableBuilder<Offset>(
+      valueListenable: _overlayPosNotifier,
+      builder: (_, offset, child) => Positioned(
+        left: offset.dx - (_dayWidth - 4) / 2,
+        top: (offset.dy - 20).clamp(0.0, double.infinity),
+        width: _dayWidth - 4,
+        child: child!,
+      ),
+      child: IgnorePointer(
+        child: RepaintBoundary(
+          child: Material(
+            color: Colors.transparent,
+            child: Transform.scale(
+              scale: 1.06,
+              child: Container(
+                height: _hourHeight * 50 / 60,
+                decoration: BoxDecoration(
+                  color: color.withAlpha(60),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border(left: BorderSide(color: color, width: 3)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(60),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                child: Text(
+                  subject?.name ?? '?',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now().weekday; // 1=Mon, 7=Sun
+    final today = DateTime.now().weekday;
     final primary = Theme.of(context).colorScheme.primary;
+    final isDragging = _draggingEntry != null;
 
-    return SingleChildScrollView(
+    // Listener drives move/up/cancel at the raw pointer level — completely
+    // independent of the gesture arena and child Opacity states. This
+    // guarantees _updateDrag is called on every pointer move during a drag
+    // even if per-block onLongPressMoveUpdate fails to fire.
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerMove: (event) {
+        if (_draggingEntry != null) _updateDrag(event.position);
+      },
+      onPointerUp: (event) {
+        if (_draggingEntry != null) _endDrag(event.position);
+      },
+      onPointerCancel: (_) {
+        if (_draggingEntry != null) _cancelDrag();
+      },
+      child: SingleChildScrollView(
+      controller: _hScrollCtrl,
       scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
+      physics: isDragging
+          ? const NeverScrollableScrollPhysics()
+          : const BouncingScrollPhysics(),
       child: SizedBox(
         width: _labelWidth + 5 * _dayWidth,
         child: Column(
@@ -49,13 +215,16 @@ class TimetableGrid extends StatelessWidget {
             ),
             Expanded(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                controller: _vScrollCtrl,
+                physics: isDragging
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(),
                 child: SizedBox(
+                  key: _gridKey,
                   height: (_endHour - _startHour) * _hourHeight,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Time labels
                       SizedBox(
                         width: _labelWidth,
                         child: _TimeLabels(
@@ -64,20 +233,29 @@ class TimetableGrid extends StatelessWidget {
                           hourHeight: _hourHeight,
                         ),
                       ),
-                      // Day columns
                       ...List.generate(5, (i) {
-                        final dayEntries =
-                            schedule.entriesForDay(i + 1, currentWeek);
-                        return _DayColumn(
+                        final dayEntries = widget.schedule
+                            .entriesForDay(i + 1, widget.currentWeek);
+                        return TimetableDayColumn(
                           entries: dayEntries,
-                          subjects: subjects,
+                          subjects: widget.subjects,
                           isToday: today - 1 == i,
                           startHour: _startHour,
                           hourHeight: _hourHeight,
                           endHour: _endHour,
                           dayWidth: _dayWidth,
                           primary: primary,
-                          onEntryTap: onEntryTap,
+                          onEntryTap: widget.onEntryTap,
+                          draggingEntryId: _draggingEntryId,
+                          dragTargetHour:
+                              _dragTargetDay == i + 1 ? _dragTargetHour : null,
+                          isDragTargetDay:
+                              _dragTargetDay == i + 1 && isDragging,
+                          onEntryLongPressStart: (entry, pos) =>
+                              _startDrag(entry, pos),
+                          onEntryLongPressMove: _updateDrag,
+                          onEntryLongPressEnd: _endDrag,
+                          onEntryLongPressCancel: _cancelDrag,
                         );
                       }),
                     ],
@@ -88,11 +266,12 @@ class TimetableGrid extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ), // closes Listener child (SingleChildScrollView)
+    ); // closes Listener
   }
 }
 
-// ── Day header ─────────────────────────────────────────────────────────────
+// ── Day header ──────────────────────────────────────────────────────────────
 
 class _DayHeader extends StatelessWidget {
   final List<String> days;
@@ -133,11 +312,12 @@ class _DayHeader extends StatelessWidget {
               child: Column(
                 children: [
                   Container(
-                    width: 32,
-                    height: 32,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color:
-                          isToday ? primary.withAlpha(30) : Colors.transparent,
+                      color: isToday
+                          ? primary.withAlpha(30)
+                          : Colors.transparent,
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -145,7 +325,7 @@ class _DayHeader extends StatelessWidget {
                         days[i],
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight:
                               isToday ? FontWeight.w700 : FontWeight.w400,
                           color: isToday ? primary : AppColors.textTertiary,
@@ -164,7 +344,7 @@ class _DayHeader extends StatelessWidget {
   }
 }
 
-// ── Time labels ────────────────────────────────────────────────────────────
+// ── Time labels ─────────────────────────────────────────────────────────────
 
 class _TimeLabels extends StatelessWidget {
   final int startHour;
@@ -186,7 +366,7 @@ class _TimeLabels extends StatelessWidget {
           left: 0,
           right: 4,
           child: Text(
-            '${startHour + i}',
+            (startHour + i).toString().padLeft(2, '0'),
             textAlign: TextAlign.right,
             style: GoogleFonts.outfit(
               fontSize: 10,
@@ -196,248 +376,6 @@ class _TimeLabels extends StatelessWidget {
           ),
         );
       }),
-    );
-  }
-}
-
-// ── Overlap layout ─────────────────────────────────────────────────────────
-
-class _EntryLayout {
-  final ScheduleEntry entry;
-  final int column;
-  final int totalColumns;
-  const _EntryLayout(
-      {required this.entry, required this.column, required this.totalColumns});
-}
-
-/// Greedy column assignment for overlapping entries.
-/// Returns each entry with its column index and total concurrent columns.
-List<_EntryLayout> _computeLayout(List<ScheduleEntry> entries) {
-  if (entries.isEmpty) return [];
-
-  final sorted = List.of(entries)
-    ..sort((a, b) => a.startTime
-        .toFractionalHours()
-        .compareTo(b.startTime.toFractionalHours()));
-
-  // columns[i] = end time of last entry in column i
-  final columnEnds = <double>[];
-  final rawLayouts = <({ScheduleEntry entry, int col})>[];
-
-  for (final entry in sorted) {
-    final start = entry.startTime.toFractionalHours();
-    final end = entry.endTime.toFractionalHours();
-
-    int col = 0;
-    while (col < columnEnds.length && columnEnds[col] > start + 0.01) {
-      col++;
-    }
-    if (col == columnEnds.length) {
-      columnEnds.add(end);
-    } else {
-      columnEnds[col] = end;
-    }
-    rawLayouts.add((entry: entry, col: col));
-  }
-
-  final total = columnEnds.length.clamp(1, 3);
-  return rawLayouts
-      .map((r) => _EntryLayout(
-            entry: r.entry,
-            column: r.col.clamp(0, total - 1),
-            totalColumns: total,
-          ))
-      .toList();
-}
-
-// ── Day column ─────────────────────────────────────────────────────────────
-
-class _DayColumn extends StatelessWidget {
-  final List<ScheduleEntry> entries;
-  final List<Subject> subjects;
-  final bool isToday;
-  final double startHour;
-  final double hourHeight;
-  final double endHour;
-  final double dayWidth;
-  final Color primary;
-  final Function(ScheduleEntry)? onEntryTap;
-
-  const _DayColumn({
-    required this.entries,
-    required this.subjects,
-    required this.isToday,
-    required this.startHour,
-    required this.hourHeight,
-    required this.endHour,
-    required this.dayWidth,
-    required this.primary,
-    required this.onEntryTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final totalHeight = (endHour - startHour) * hourHeight;
-    final now = DateTime.now();
-    final currentHour = now.hour + now.minute / 60.0;
-    final indicatorTop = (currentHour - startHour) * hourHeight;
-
-    final layouts = _computeLayout(entries);
-
-    return SizedBox(
-      width: dayWidth,
-      height: totalHeight,
-      child: Stack(
-        children: [
-          // Today highlight column
-          if (isToday)
-            Positioned.fill(
-              child: Container(
-                color: primary.withAlpha(6),
-              ),
-            ),
-
-          // Hour dividers
-          ...List.generate((endHour - startHour).toInt(), (i) {
-            return Positioned(
-              top: i * hourHeight,
-              left: 0,
-              right: 0,
-              child: Divider(
-                height: 1,
-                color: Colors.white.withAlpha(isToday ? 12 : 7),
-              ),
-            );
-          }),
-
-          // Entries with overlap-aware positioning
-          ...layouts.map((layout) {
-            final entry = layout.entry;
-            final top =
-                (entry.startTime.toFractionalHours() - startHour) * hourHeight;
-            final height = (entry.endTime.toFractionalHours() -
-                    entry.startTime.toFractionalHours()) *
-                hourHeight;
-            Subject? subject;
-            try {
-              subject = subjects.firstWhere((s) => s.id == entry.subjectId);
-            } catch (_) {}
-
-            // Lane positioning within the day column
-            const padding = 2.0;
-            final laneWidth =
-                (dayWidth - padding * (layout.totalColumns + 1)) /
-                    layout.totalColumns;
-            final left = padding + layout.column * (laneWidth + padding);
-            final width = laneWidth;
-
-            return Positioned(
-              top: top.clamp(0.0, totalHeight - 24),
-              left: left,
-              width: width,
-              height: height.clamp(22, totalHeight),
-              child: _EntryBlock(
-                entry: entry,
-                subject: subject,
-                isNarrow: layout.totalColumns > 1,
-                onTap:
-                    onEntryTap != null ? () => onEntryTap!(entry) : null,
-              ),
-            );
-          }),
-
-          // Current time indicator
-          if (isToday &&
-              currentHour >= startHour &&
-              currentHour <= endHour)
-            Positioned(
-              top: indicatorTop - 1,
-              left: 0,
-              right: 0,
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: primary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      height: 2,
-                      color: primary.withAlpha(180),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Entry block ────────────────────────────────────────────────────────────
-
-class _EntryBlock extends StatelessWidget {
-  final ScheduleEntry entry;
-  final Subject? subject;
-  final bool isNarrow;
-  final VoidCallback? onTap;
-
-  const _EntryBlock({
-    required this.entry,
-    required this.subject,
-    required this.isNarrow,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = subject != null
-        ? Color(subject!.colorValue)
-        : Theme.of(context).colorScheme.primary;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 1),
-        decoration: BoxDecoration(
-          color: color.withAlpha(28),
-          borderRadius: BorderRadius.circular(5),
-          border: Border(
-            left: BorderSide(color: color, width: 3),
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              subject?.name ?? '?',
-              style: GoogleFonts.outfit(
-                fontSize: isNarrow ? 9 : 10,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
-            ),
-            if (!isNarrow && entry.room != null)
-              Text(
-                entry.room!,
-                style: GoogleFonts.outfit(
-                  fontSize: 9,
-                  color: color.withAlpha(180),
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -40,7 +40,8 @@ class _ExamsTabState extends State<ExamsTab> {
 
   SubjectImportance _importance(Exam exam) {
     final name = exam.subjectName ?? exam.title;
-    return SubjectImportanceService.getImportance(name, _country);
+    return SubjectImportanceService.getImportance(name, _country,
+        profileId: StorageService.getString(StorageKeys.schoolProfile));
   }
 
   Future<void> _openAddEdit({Exam? existing}) async {
@@ -122,6 +123,15 @@ class _ExamsTabState extends State<ExamsTab> {
                               fontWeight: FontWeight.w400,
                             ),
                           ),
+                          if (_upcoming.isNotEmpty)
+                            Text(
+                              '${_upcoming.length} upcoming',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -318,7 +328,7 @@ class _ExamCard extends StatelessWidget {
                 // Content
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 13, 10, 13),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
                     child: Row(
                       children: [
                         Expanded(
@@ -368,6 +378,16 @@ class _ExamCard extends StatelessWidget {
                                       color: AppColors.textTertiary,
                                     ),
                                   ),
+                                  if (exam.date.hour != 0 ||
+                                      exam.date.minute != 0) ...[
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${exam.date.hour.toString().padLeft(2, '0')}:${exam.date.minute.toString().padLeft(2, '0')}',
+                                      style: GoogleFonts.outfit(
+                                          fontSize: 11,
+                                          color: AppColors.textTertiary),
+                                    ),
+                                  ],
                                   if (exam.room != null &&
                                       exam.room!.isNotEmpty) ...[
                                     const SizedBox(width: 5),
@@ -477,12 +497,12 @@ class _DaysBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 52,
-      height: 52,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(10),
         color: color.withAlpha(18),
         border: Border.all(color: color.withAlpha(60)),
       ),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -569,7 +589,8 @@ class _ExamFormSheetState extends State<_ExamFormSheet> {
 
   SubjectImportance get _importance =>
       SubjectImportanceService.getImportance(
-          _subjectCtrl.text.trim(), widget.country);
+          _subjectCtrl.text.trim(), widget.country,
+          profileId: StorageService.getString(StorageKeys.schoolProfile));
 
   @override
   void initState() {
@@ -1019,7 +1040,7 @@ class _EmptyState extends StatelessWidget {
               shape: BoxShape.circle,
               color: AppColors.primaryLight,
             ),
-            child: const Icon(Icons.event_note_outlined,
+            child: const Icon(Icons.check_circle_outline,
                 size: 32, color: AppColors.primary),
           ),
           const SizedBox(height: 20),
@@ -1032,9 +1053,10 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Add an exam to track your countdown',
+            'Nothing coming up. Enjoy it while it lasts.',
             style: GoogleFonts.outfit(
                 fontSize: 13, color: AppColors.textTertiary),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 28),
           GestureDetector(

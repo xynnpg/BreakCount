@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import '../models/exam.dart';
@@ -59,8 +60,23 @@ class NotificationService {
       }
 
       _initialized = true;
+
+      // On Android, request battery-optimization exemption so alarms fire
+      // even when the app is killed — critical on Samsung One UI.
+      _requestBatteryExemption();
     } catch (e) {
       debugPrint('NotificationService.init error: $e');
+    }
+  }
+
+  static Future<void> _requestBatteryExemption() async {
+    try {
+      final status = await Permission.ignoreBatteryOptimizations.status;
+      if (!status.isGranted) {
+        await Permission.ignoreBatteryOptimizations.request();
+      }
+    } catch (e) {
+      debugPrint('NotificationService._requestBatteryExemption error: $e');
     }
   }
 
@@ -109,6 +125,41 @@ class NotificationService {
     return false;
   }
 
+  // ----------------------------------------- zonedSchedule with fallback ----
+
+  /// Tries to schedule with [alarmClock] mode (exact, no Doze delay).
+  /// If the device rejects it (Android 12 without SCHEDULE_EXACT_ALARM), falls
+  /// back to [inexact] so the notification still fires — no permission prompt.
+  static Future<void> _zonedScheduleWithFallback(
+    int id,
+    String title,
+    String body,
+    tz.TZDateTime scheduledDate,
+    NotificationDetails details, {
+    DateTimeComponents? matchDateTimeComponents,
+  }) async {
+    try {
+      await _plugin.zonedSchedule(
+        id, title, body, scheduledDate, details,
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: matchDateTimeComponents,
+      );
+    } catch (_) {
+      // alarmClock mode failed (ExactAlarmPermissionException on Android 12).
+      // USE_EXACT_ALARM in manifest auto-grants on API 33+, so this fallback
+      // is only hit on API 31–32 without user-granted SCHEDULE_EXACT_ALARM.
+      await _plugin.zonedSchedule(
+        id, title, body, scheduledDate, details,
+        androidScheduleMode: AndroidScheduleMode.inexact,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: matchDateTimeComponents,
+      );
+    }
+  }
+
   // -------------------------------------------------- exam notifications ----
 
   static const _examDetails = NotificationDetails(
@@ -147,15 +198,12 @@ class NotificationService {
         0,
       );
       if (date24h.isAfter(now)) {
-        await _plugin.zonedSchedule(
+        await _zonedScheduleWithFallback(
           id24h,
           'Exam tomorrow',
           '${exam.title} \u00b7 ${exam.type.label}',
           date24h,
           _examDetails,
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
         );
       }
 
@@ -165,15 +213,12 @@ class NotificationService {
         tz.local,
       );
       if (date1h.isAfter(now)) {
-        await _plugin.zonedSchedule(
+        await _zonedScheduleWithFallback(
           id1h,
           'Exam in 1 hour',
           exam.title,
           date1h,
           _examDetails,
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
         );
       }
     } catch (e) {
@@ -254,12 +299,12 @@ class NotificationService {
 
       final notifId = reminder.id.hashCode.abs() % 2147483647;
 
-      // Fire immediately for due reminders (timezone scheduling added
-      // via scheduleExamNotification; classic reminders keep show() for now).
-      await _plugin.show(
+      final scheduledTime = tz.TZDateTime.from(notifTime, tz.local);
+      await _zonedScheduleWithFallback(
         notifId,
         _titleFor(reminder),
         reminder.title,
+        scheduledTime,
         details,
       );
     } catch (e) {
@@ -299,6 +344,117 @@ class NotificationService {
       await _plugin.cancelAll();
     } catch (e) {
       debugPrint('cancelAll error: $e');
+    }
+  }
+
+  /// Schedules a weekly recurring notification 10 min before a class.
+  /// [dayOfWeek] is Dart's weekday (1=Mon, 7=Sun).
+  static Future<void> scheduleClassNotification(
+      String entryId, String subjectName, int dayOfWeek, int hour, int minute) async {
+    if (!_initialized) return;
+    try {
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          'breakcount_reminders',
+          'BreakCount Reminders',
+          channelDescription: 'Reminders for tests, exams, and breaks',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: true),
+      );
+      final notifId = (entryId.hashCode.abs() % 100000000) + 200000000;
+      // Compute time 10 min before class
+      int notifHour = hour;
+      int notifMin = minute - 10;
+      if (notifMin < 0) { notifMin += 60; notifHour -= 1; }
+      if (notifHour < 0) return; // before midnight, skip
+
+      final now = tz.TZDateTime.now(tz.local);
+      // Find next occurrence of this weekday + time
+      var dt = tz.TZDateTime(tz.local, now.year, now.month, now.day, notifHour, notifMin);
+      // Advance until correct weekday and in future
+      for (int i = 0; i < 8; i++) {
+        if (dt.weekday == dayOfWeek && dt.isAfter(now)) break;
+        dt = dt.add(const Duration(days: 1));
+      }
+
+      await _zonedScheduleWithFallback(
+        notifId,
+        subjectName,
+        'Starting in 10 minutes',
+        dt,
+        details,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      );
+    } catch (e) {
+      debugPrint('scheduleClassNotification error: $e');
+    }
+  }
+
+  /// Cancels the weekly class notification for [entryId].
+  static Future<void> cancelClassNotification(String entryId) async {
+    if (!_initialized) return;
+    try {
+      final notifId = (entryId.hashCode.abs() % 100000000) + 200000000;
+      await _plugin.cancel(notifId);
+    } catch (e) {
+      debugPrint('cancelClassNotification error: $e');
+    }
+  }
+
+  /// Shows a notification immediately — use this to verify channels + permissions.
+  static Future<String?> showInstantTestNotification() async {
+    if (!_initialized) return 'NotificationService not initialized';
+    try {
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          'breakcount_reminders',
+          'BreakCount Reminders',
+          channelDescription: 'Reminders for tests, exams, and breaks',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: true),
+      );
+      await _plugin.show(999999997, 'BreakCount Test', 'Notifications are working!', details);
+      return null;
+    } catch (e) {
+      debugPrint('showInstantTestNotification error: $e');
+      return e.toString();
+    }
+  }
+
+  /// Schedules a one-off test notification [seconds] seconds from now.
+  /// Returns an error string on failure, or null on success.
+  static Future<String?> scheduleTestNotification(int seconds) async {
+    if (!_initialized) return 'NotificationService not initialized';
+    try {
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          'breakcount_reminders',
+          'BreakCount Reminders',
+          channelDescription: 'Reminders for tests, exams, and breaks',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: true),
+      );
+      final when = tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds));
+      await _zonedScheduleWithFallback(
+        999999998,
+        'BreakCount Test',
+        'Notifications are working! (${seconds}s delay)',
+        when,
+        details,
+      );
+      return null;
+    } catch (e) {
+      debugPrint('scheduleTestNotification error: $e');
+      return e.toString();
     }
   }
 

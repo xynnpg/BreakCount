@@ -14,6 +14,9 @@ import '../widgets/glassmorphic_card.dart';
 import '../widgets/break_timeline.dart';
 import '../widgets/shimmer_loading.dart';
 import '../widgets/current_class_card.dart';
+import 'counter_tab_widgets.dart';
+
+enum _RingMode { percent, days, hours, minutes, seconds, milliseconds }
 
 class CounterTab extends StatefulWidget {
   const CounterTab({super.key});
@@ -27,7 +30,16 @@ class _CounterTabState extends State<CounterTab>
   SchoolYear? _schoolYear;
   bool _loading = true;
   Timer? _timer;
+  Timer? _msTicker;
   int _days = 0, _hours = 0, _minutes = 0, _seconds = 0;
+
+  // Ring centre cycling
+  _RingMode _ringMode = _RingMode.percent;
+  String _ringValue = '';
+  String _ringLabel = '';
+
+  static const _schoolHoursPerDay = 6;
+  static final _numFmt = NumberFormat('#,###');
 
   @override
   bool get wantKeepAlive => true;
@@ -46,13 +58,17 @@ class _CounterTabState extends State<CounterTab>
     });
     if (data != null) {
       _startTimer();
+      _updateRingValue();
     }
   }
 
   void _startTimer() {
     _updateCountdown();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) _updateCountdown();
+      if (mounted) {
+        _updateCountdown();
+        if (_ringMode != _RingMode.milliseconds) _updateRingValue();
+      }
     });
   }
 
@@ -73,9 +89,69 @@ class _CounterTabState extends State<CounterTab>
     });
   }
 
+  void _cycleRingMode() {
+    final next = _RingMode.values[(_ringMode.index + 1) % _RingMode.values.length];
+    _msTicker?.cancel();
+    _msTicker = null;
+    setState(() => _ringMode = next);
+    _updateRingValue();
+    if (next == _RingMode.milliseconds) {
+      _msTicker = Timer.periodic(const Duration(milliseconds: 16), (_) {
+        if (mounted) _updateRingValue();
+      });
+    }
+  }
+
+  void _updateRingValue() {
+    final sy = _schoolYear;
+    if (sy == null) return;
+    final activeDays = CalculatorService.activeSchoolDaysRemaining(sy);
+    String value;
+    String label;
+    switch (_ringMode) {
+      case _RingMode.percent:
+        value = '${(sy.yearProgress * 100).round()}%';
+        label = 'School Year';
+        break;
+      case _RingMode.days:
+        value = '$activeDays';
+        label = 'school days left';
+        break;
+      case _RingMode.hours:
+        value = _fmt(activeDays * _schoolHoursPerDay);
+        label = 'school hours left';
+        break;
+      case _RingMode.minutes:
+        value = _fmt(activeDays * _schoolHoursPerDay * 60);
+        label = 'minutes left';
+        break;
+      case _RingMode.seconds:
+        value = _fmt(activeDays * _schoolHoursPerDay * 3600);
+        label = 'seconds left';
+        break;
+      case _RingMode.milliseconds:
+        final baseMs = activeDays * _schoolHoursPerDay * 3600 * 1000;
+        final liveMs = 1000 - DateTime.now().millisecondsSinceEpoch % 1000;
+        value = _fmt(baseMs + liveMs);
+        label = 'ms left';
+        break;
+    }
+    setState(() {
+      _ringValue = value;
+      _ringLabel = label;
+    });
+  }
+
+  String _fmt(int v) {
+    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
+    if (v >= 10000) return _numFmt.format(v);
+    return v.toString();
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
+    _msTicker?.cancel();
     super.dispose();
   }
 
@@ -157,118 +233,146 @@ class _CounterTabState extends State<CounterTab>
             ),
           ),
           CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
-                child: Column(
-                  children: [
-                    _buildStatusBadge(onBreak, yearOver, next),
-                    const SizedBox(height: AppSpacing.lg),
-                    const CurrentClassCard(),
-                    const SizedBox(height: AppSpacing.lg),
-                    if (!yearOver)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.xl, horizontal: AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFFDF8F5),
-                              Color(0xFFFAF3EC),
-                            ],
-                          ),
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.xl),
-                          border: Border.all(
-                              color: Color(0xFFEDD9C8), width: 1),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x0A6F4E37),
-                              blurRadius: 20,
-                              spreadRadius: 0,
-                              offset: Offset(0, 6),
-                            ),
-                            BoxShadow(
-                              color: Color(0x056F4E37),
-                              blurRadius: 48,
-                              spreadRadius: 10,
-                              offset: Offset(0, 0),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'COUNTDOWN',
-                              style: GoogleFonts.outfit(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textTertiary,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            AnimatedCounter(
-                              days: _days,
-                              hours: _hours,
-                              minutes: _minutes,
-                              seconds: _seconds,
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (yearOver) _buildYearOverBadge(),
-                    const SizedBox(height: AppSpacing.xxl),
-                    if (!yearOver)
-                      ProgressRing(
-                        progress: sy.yearProgress,
-                        size: 176,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '${(sy.yearProgress * 100).round()}%',
-                              style: GoogleFonts.outfit(
-                                fontSize: 30,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                                height: 1,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'School Year',
-                              style: GoogleFonts.outfit(
-                                fontSize: 11,
-                                color: AppColors.textTertiary,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    const SizedBox(height: AppSpacing.xl),
-                    if (next != null)
-                      _buildNextBreakCard(next, onBreak),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildStatsRow(stats),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildTimelineSection(sy),
-                    const SizedBox(height: 120),
-                  ],
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+                    child: Column(
+                      children: [
+                        _buildStatusBadge(onBreak, yearOver, next),
+                        const SizedBox(height: AppSpacing.lg),
+                        const CurrentClassCard(),
+                        const SizedBox(height: AppSpacing.lg),
+                        if (!yearOver) _buildCountdownCard(),
+                        if (yearOver) _buildYearOverBadge(),
+                        const SizedBox(height: AppSpacing.xxl),
+                        if (!yearOver) _buildProgressRing(sy),
+                        const SizedBox(height: AppSpacing.xl),
+                        if (next != null)
+                          _buildNextBreakCard(next, onBreak),
+                        const SizedBox(height: AppSpacing.md),
+                        _buildStatsRow(stats),
+                        const SizedBox(height: AppSpacing.lg),
+                        _buildTimelineSection(sy),
+                        const SizedBox(height: 120),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProgressRing(SchoolYear sy) {
+    final isPercent = _ringMode == _RingMode.percent;
+    final valueSize = isPercent ? 30.0 : _ringMode == _RingMode.milliseconds ? 18.0 : 24.0;
+
+    return GestureDetector(
+      onTap: _cycleRingMode,
+      child: ProgressRing(
+        progress: sy.yearProgress,
+        size: 176,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              transitionBuilder: (child, anim) => FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.3),
+                    end: Offset.zero,
+                  ).animate(anim),
+                  child: child,
+                ),
+              ),
+              child: Text(
+                _ringValue.isEmpty
+                    ? '${(sy.yearProgress * 100).round()}%'
+                    : _ringValue,
+                key: ValueKey(_ringValue + _ringMode.name),
+                style: GoogleFonts.outfit(
+                  fontSize: valueSize,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  height: 1,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              _ringLabel.isEmpty ? 'School Year' : _ringLabel,
+              style: GoogleFonts.outfit(
+                fontSize: 10,
+                color: AppColors.textTertiary,
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 2),
+            Icon(Icons.touch_app_outlined,
+                size: 10, color: AppColors.textTertiary.withValues(alpha: 0.6)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCountdownCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.xl, horizontal: AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFDF8F5), Color(0xFFFAF3EC)],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: const Color(0xFFEDD9C8), width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A6F4E37),
+            blurRadius: 20,
+            spreadRadius: 0,
+            offset: Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Color(0x056F4E37),
+            blurRadius: 48,
+            spreadRadius: 10,
+            offset: Offset(0, 0),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'COUNTDOWN',
+            style: GoogleFonts.outfit(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textTertiary,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AnimatedCounter(
+            days: _days,
+            hours: _hours,
+            minutes: _minutes,
+            seconds: _seconds,
+          ),
         ],
       ),
     );
@@ -309,7 +413,7 @@ class _CounterTabState extends State<CounterTab>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _PulsingDot(color: color, pulse: onBreak),
+          CounterPulsingDot(color: color, pulse: onBreak),
           const SizedBox(width: 8),
           Text(
             label,
@@ -446,21 +550,21 @@ class _CounterTabState extends State<CounterTab>
       animationDelay: 160,
       child: Row(
         children: [
-          _StatItem(
+          CounterStatItem(
             label: 'Survived',
             value: '${stats['daysSurvived']}',
             unit: 'days',
             valueColor: AppColors.success,
           ),
           Container(height: 44, width: 1, color: AppColors.surfaceBorder),
-          _StatItem(
+          CounterStatItem(
             label: 'Remaining',
             value: '${stats['daysRemaining']}',
             unit: 'days',
             valueColor: AppColors.primary,
           ),
           Container(height: 44, width: 1, color: AppColors.surfaceBorder),
-          _StatItem(
+          CounterStatItem(
             label: 'Week',
             value: '${stats['weekNumber']}',
             unit: 'of year',
@@ -508,125 +612,6 @@ class _CounterTabState extends State<CounterTab>
           BreakTimeline(
             breaks: sy.breaks,
             accentColor: accent,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final String unit;
-  final Color? valueColor;
-
-  const _StatItem(
-      {required this.label, required this.value, required this.unit, this.valueColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: GoogleFonts.outfit(
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-              color: valueColor ?? AppColors.textPrimary,
-              height: 1,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            unit,
-            style:
-                GoogleFonts.outfit(fontSize: 10, color: AppColors.textTertiary),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: GoogleFonts.outfit(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PulsingDot extends StatefulWidget {
-  final Color color;
-  final bool pulse;
-  const _PulsingDot({required this.color, this.pulse = false});
-  @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
-
-class _PulsingDotState extends State<_PulsingDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _scale;
-  late final Animation<double> _fade;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-        duration: const Duration(milliseconds: 1400), vsync: this);
-    _scale = Tween<double>(begin: 1.0, end: 2.6)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
-    _fade = Tween<double>(begin: 0.55, end: 0.0)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
-    if (widget.pulse) _ctrl.repeat();
-  }
-
-  @override
-  void didUpdateWidget(_PulsingDot old) {
-    super.didUpdateWidget(old);
-    if (widget.pulse && !_ctrl.isAnimating) _ctrl.repeat();
-    if (!widget.pulse && _ctrl.isAnimating) _ctrl.stop();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 14,
-      height: 14,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (widget.pulse)
-            AnimatedBuilder(
-              animation: _ctrl,
-              builder: (context, _) => Transform.scale(
-                scale: _scale.value,
-                child: Opacity(
-                  opacity: _fade.value,
-                  child: Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                        color: widget.color, shape: BoxShape.circle),
-                  ),
-                ),
-              ),
-            ),
-          Container(
-            width: 6,
-            height: 6,
-            decoration:
-                BoxDecoration(color: widget.color, shape: BoxShape.circle),
           ),
         ],
       ),
