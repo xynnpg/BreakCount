@@ -15,6 +15,9 @@ import '../models/school_year.dart';
 import '../data/school_profiles_data.dart';
 import '../widgets/glassmorphic_card.dart';
 import '../widgets/backup_sheet.dart';
+import '../services/achievement_service.dart';
+import '../services/widget_service.dart';
+import 'settings_widgets.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -38,6 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   bool _backupBusy = false;
   String? _backupError;
   String _autoBackup = 'off';
+  String _widgetPersona = 'hype';
 
   @override
   bool get wantKeepAlive => true;
@@ -61,6 +65,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           StorageService.getBool(StorageKeys.breakNotificationsEnabled) ?? true;
       _aiApiKey = StorageService.getString(StorageKeys.aiApiKey) ?? '';
       _autoBackup = StorageService.getString(StorageKeys.autoBackup) ?? 'off';
+      _widgetPersona =
+          StorageService.getString(StorageKeys.widgetPersona) ?? 'hype';
     });
     _loadBackupState();
   }
@@ -226,6 +232,101 @@ class _SettingsScreenState extends State<SettingsScreen>
               );
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showPersonaPicker() async {
+    final options = [
+      ('hype', 'Hype', '🔥', 'LET\'S GO only 14 days!!!'),
+      ('chill', 'Chill', '😎', 'eh, 14 days'),
+      ('dramatic', 'Dramatic', '😭', 'I CANNOT 14 MORE DAYS'),
+      ('sarcastic', 'Sarcastic', '🙄', '14 days. Cool. Fine. Whatever.'),
+    ];
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceBorder,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text('Widget Personality',
+                style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary)),
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text('How the home screen widget talks to you',
+                style: GoogleFonts.outfit(
+                    fontSize: 12, color: AppColors.textTertiary)),
+          ),
+          const SizedBox(height: 8),
+          ...options.map((o) {
+            final selected = _widgetPersona == o.$1;
+            return InkWell(
+              onTap: () {
+                StorageService.saveString(StorageKeys.widgetPersona, o.$1);
+                setState(() => _widgetPersona = o.$1);
+                WidgetService.update();
+                Navigator.pop(ctx);
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg, vertical: 12),
+                child: Row(
+                  children: [
+                    Text(o.$3,
+                        style: const TextStyle(fontSize: 20)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(o.$2,
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                fontWeight: selected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary,
+                              )),
+                          Text('"${o.$4}"',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 11,
+                                  color: AppColors.textTertiary,
+                                  fontStyle: FontStyle.italic)),
+                        ],
+                      ),
+                    ),
+                    if (selected)
+                      const Icon(Icons.check_rounded,
+                          color: AppColors.primary, size: 18),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -399,12 +500,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: AppSpacing.xl),
 
                     // ── School Calendar ──────────────────────────────────────
-                    _SectionLabel('School Calendar'),
+                    SettingsSectionLabel('School Calendar'),
                     GlassmorphicCard(
                       padding: EdgeInsets.zero,
                       child: Column(
                         children: [
-                          _SettingsRow(
+                          SettingsRow(
                             icon: Icons.public_outlined,
                             label: 'Country',
                             trailing: Text(
@@ -419,8 +520,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                               _load();
                             },
                           ),
-                          _RowDivider(),
-                          _SettingsRow(
+                          const SettingsRowDivider(),
+                          SettingsRow(
                             icon: Icons.school_outlined,
                             label: 'School Profile',
                             subtitle: () {
@@ -439,8 +540,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                                 color: AppColors.textTertiary, size: 20),
                             onTap: _selectProfile,
                           ),
-                          _RowDivider(),
-                          _SettingsRow(
+                          const SettingsRowDivider(),
+                          SettingsRow(
                             icon: Icons.refresh_rounded,
                             label: 'Refresh School Data',
                             subtitle: _lastUpdated != null
@@ -465,12 +566,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: AppSpacing.lg),
 
                     // ── Reminders ────────────────────────────────────────────
-                    _SectionLabel('Reminders'),
+                    SettingsSectionLabel('Reminders'),
                     GlassmorphicCard(
                       padding: EdgeInsets.zero,
                       child: Column(
                         children: [
-                          _SettingsRow(
+                          SettingsRow(
                             icon: Icons.notifications_outlined,
                             label: 'Notifications',
                             trailing: Switch(
@@ -485,8 +586,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                               },
                             ),
                           ),
-                          _RowDivider(),
-                          _SettingsRow(
+                          const SettingsRowDivider(),
+                          SettingsRow(
                             icon: Icons.event_outlined,
                             label: 'Break Notifications',
                             subtitle: 'Alerts 1 day before breaks start and end',
@@ -510,8 +611,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                               },
                             ),
                           ),
-                          _RowDivider(),
-                          _SettingsRow(
+                          const SettingsRowDivider(),
+                          SettingsRow(
                             icon: Icons.list_alt_outlined,
                             label: 'View Reminders',
                             trailing: const Icon(Icons.chevron_right,
@@ -526,47 +627,83 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: AppSpacing.lg),
 
                     // ── AI Features ──────────────────────────────────────────
-                    _SectionLabel('AI Features'),
+                    SettingsSectionLabel('AI Features'),
                     GlassmorphicCard(
                       padding: EdgeInsets.zero,
-                      child: _SettingsRow(
-                        icon: Icons.auto_awesome_outlined,
-                        label: 'Groq API Key (optional)',
-                        subtitle: _aiApiKey.isEmpty
-                            ? 'Not set — needed for photo scan'
-                            : 'Key saved (${_aiApiKey.length} chars)',
-                        trailing: const Icon(Icons.chevron_right,
-                            color: AppColors.textTertiary, size: 20),
-                        onTap: _editAiApiKey,
+                      child: Column(
+                        children: [
+                          SettingsRow(
+                            icon: Icons.auto_awesome_outlined,
+                            label: 'Groq API Key (optional)',
+                            subtitle: _aiApiKey.isEmpty
+                                ? 'Not set — needed for photo scan'
+                                : 'Key saved (${_aiApiKey.length} chars)',
+                            trailing: const Icon(Icons.chevron_right,
+                                color: AppColors.textTertiary, size: 20),
+                            onTap: _editAiApiKey,
+                          ),
+                          const SettingsRowDivider(),
+                          SettingsRow(
+                            icon: Icons.widgets_outlined,
+                            label: 'Widget Personality',
+                            subtitle: switch (_widgetPersona) {
+                              'chill' => 'Chill 😎',
+                              'dramatic' => 'Dramatic 😭',
+                              'sarcastic' => 'Sarcastic 🙄',
+                              _ => 'Hype 🔥',
+                            },
+                            trailing: const Icon(Icons.chevron_right,
+                                color: AppColors.textTertiary, size: 20),
+                            onTap: _showPersonaPicker,
+                          ),
+                        ],
                       ),
                     ),
 
                     const SizedBox(height: AppSpacing.lg),
 
-                    // ── Statistics ────────────────────────────────────────────
-                    _SectionLabel('Statistics'),
+                    // ── Statistics & Achievements ──────────────────────────────
+                    SettingsSectionLabel('Statistics'),
                     GlassmorphicCard(
                       padding: EdgeInsets.zero,
-                      child: _SettingsRow(
-                        icon: Icons.bar_chart_rounded,
-                        label: 'Statistics',
-                        subtitle: 'School year progress & insights',
-                        trailing: const Icon(Icons.chevron_right,
-                            color: AppColors.textTertiary, size: 20),
-                        onTap: () =>
-                            Navigator.pushNamed(context, Routes.stats),
+                      child: Column(
+                        children: [
+                          SettingsRow(
+                            icon: Icons.bar_chart_rounded,
+                            label: 'Statistics',
+                            subtitle: 'School year progress & insights',
+                            trailing: const Icon(Icons.chevron_right,
+                                color: AppColors.textTertiary, size: 20),
+                            onTap: () =>
+                                Navigator.pushNamed(context, Routes.stats),
+                          ),
+                          const SettingsRowDivider(),
+                          SettingsRow(
+                            icon: Icons.emoji_events_rounded,
+                            label: 'Achievements',
+                            subtitle: () {
+                              final count = AchievementService.allUnlocks.length;
+                              const total = 25;
+                              return '$count / $total unlocked';
+                            }(),
+                            trailing: const Icon(Icons.chevron_right,
+                                color: AppColors.textTertiary, size: 20),
+                            onTap: () =>
+                                Navigator.pushNamed(context, Routes.achievements),
+                          ),
+                        ],
                       ),
                     ),
 
                     const SizedBox(height: AppSpacing.lg),
 
                     // ── Backup & Restore ──────────────────────────────────────
-                    _SectionLabel('Backup & Restore'),
+                    SettingsSectionLabel('Backup & Restore'),
                     GlassmorphicCard(
                       padding: EdgeInsets.zero,
                       child: Column(
                         children: [
-                          _SettingsRow(
+                          SettingsRow(
                             icon: Icons.backup_outlined,
                             label: 'Google Drive Backup',
                             subtitle: _backupSignedIn
@@ -578,8 +715,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                                 color: AppColors.textTertiary, size: 20),
                             onTap: _showBackupSheet,
                           ),
-                          _RowDivider(),
-                          _SettingsRow(
+                          const SettingsRowDivider(),
+                          SettingsRow(
                             icon: Icons.schedule_outlined,
                             label: 'Auto-backup',
                             subtitle: switch (_autoBackup) {
@@ -599,10 +736,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: AppSpacing.lg),
 
                     // ── Data ─────────────────────────────────────────────────
-                    _SectionLabel('Data'),
+                    SettingsSectionLabel('Data'),
                     GlassmorphicCard(
                       padding: EdgeInsets.zero,
-                      child: _SettingsRow(
+                      child: SettingsRow(
                         icon: Icons.delete_outline,
                         label: 'Clear All Data',
                         labelColor: AppColors.error,
@@ -615,12 +752,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: AppSpacing.lg),
 
                     // ── Support ───────────────────────────────────────────────
-                    _SectionLabel('Support'),
+                    SettingsSectionLabel('Support'),
                     GlassmorphicCard(
                       padding: EdgeInsets.zero,
                       child: Column(
                         children: [
-                          _SettingsRow(
+                          SettingsRow(
                             icon: Icons.code_rounded,
                             label: 'GitHub',
                             subtitle: 'View source & report issues',
@@ -631,8 +768,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                               mode: LaunchMode.externalApplication,
                             ),
                           ),
-                          _RowDivider(),
-                          _SettingsRow(
+                          const SettingsRowDivider(),
+                          SettingsRow(
                             icon: Icons.coffee_rounded,
                             label: 'Buy Me a Coffee',
                             subtitle: 'Support BreakCount development',
@@ -771,13 +908,22 @@ class _SettingsScreenState extends State<SettingsScreen>
               borderRadius: BorderRadius.circular(AppRadius.full),
               border: Border.all(color: AppColors.surfaceBorder),
               color: Colors.white,
+              boxShadow: const [AppElevation.low],
             ),
-            child: Text(
-              'BreakCount v2.0.1',
-              style: GoogleFonts.outfit(
-                  color: AppColors.textTertiary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.coffee_rounded,
+                    size: 12, color: AppColors.primary),
+                const SizedBox(width: 5),
+                Text(
+                  'BreakCount v2.0.1',
+                  style: GoogleFonts.outfit(
+                      color: AppColors.textTertiary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 6),
@@ -792,104 +938,3 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 }
 
-// ── Shared settings widgets ────────────────────────────────────────────────
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(
-          left: AppSpacing.xs, bottom: AppSpacing.sm, top: 2),
-      child: Text(
-        text.toUpperCase(),
-        style: GoogleFonts.outfit(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textTertiary,
-          letterSpacing: 1.5,
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String? subtitle;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-  final Color? labelColor;
-
-  const _SettingsRow({
-    required this.icon,
-    required this.label,
-    this.subtitle,
-    this.trailing,
-    this.onTap,
-    this.labelColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, size: 17, color: AppColors.primary),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.outfit(
-                      fontSize: 14,
-                      color: labelColor ?? AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      style: GoogleFonts.outfit(
-                          fontSize: 12, color: AppColors.textTertiary),
-                    ),
-                ],
-              ),
-            ),
-            ?trailing,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RowDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Divider(
-      height: 0.5,
-      indent: 64,
-      endIndent: 0,
-      color: AppColors.surfaceBorder,
-    );
-  }
-}

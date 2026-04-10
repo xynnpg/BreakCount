@@ -9,9 +9,13 @@ import '../models/subject.dart';
 import '../services/storage_service.dart';
 import '../services/schedule_service.dart';
 import '../services/ai_schedule_service.dart';
-import '../services/notification_service.dart';
-import 'ai_review_screen.dart';
+import '../services/achievement_service.dart';
+import '../widgets/achievement_unlock_overlay.dart';
 import '../widgets/timetable_grid.dart';
+import 'ai_review_screen.dart';
+import 'schedule_tab_sheets.dart';
+import 'schedule_tab_entry_detail.dart';
+import 'schedule_tab_widgets.dart';
 
 class ScheduleTab extends StatefulWidget {
   const ScheduleTab({super.key});
@@ -63,8 +67,6 @@ class _ScheduleTabState extends State<ScheduleTab>
   // ── AI Photo Import ──────────────────────────────────────────────────────────
 
   Future<void> _aiImportPhoto() async {
-    // Use user's own key if set; otherwise the service falls back to the
-    // Cloudflare Worker proxy (5 free scans/day).
     final rawKey = StorageService.getString(StorageKeys.aiApiKey) ?? '';
     final apiKey = rawKey.trim().isEmpty ? null : rawKey.trim();
     final country =
@@ -73,7 +75,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => const _PhotoSourceSheet(),
+      builder: (_) => const PhotoSourceSheet(),
     );
     if (source == null || !mounted) return;
 
@@ -110,8 +112,8 @@ class _ScheduleTabState extends State<ScheduleTab>
     final edited = await Navigator.push<AiScheduleResult>(
       context,
       MaterialPageRoute(
-          builder: (_) => AiReviewScreen(
-              initialResult: result, country: country)),
+          builder: (_) =>
+              AiReviewScreen(initialResult: result, country: country)),
     );
     if (edited == null || !mounted) return;
 
@@ -119,7 +121,7 @@ class _ScheduleTabState extends State<ScheduleTab>
     if (_schedule.entries.isNotEmpty) {
       final choice = await showDialog<String>(
         context: context,
-        builder: (ctx) => _MergeDialog(),
+        builder: (_) => const MergeDialog(),
       );
       if (choice == null || choice == 'cancel') return;
       replace = choice == 'replace';
@@ -134,6 +136,14 @@ class _ScheduleTabState extends State<ScheduleTab>
     }
 
     _load();
+
+    if (await AchievementService.onAiScan() && mounted) {
+      AchievementUnlockOverlay.show(context, 'ai_wizard');
+    }
+    if (await AchievementService.onScheduleFullWeek() && mounted) {
+      AchievementUnlockOverlay.show(context, 'fully_loaded');
+    }
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -141,6 +151,37 @@ class _ScheduleTabState extends State<ScheduleTab>
                 Text('${edited.entries.length} classes imported from photo')),
       );
     }
+  }
+
+  void _onEntryTap(BuildContext context, ScheduleEntry entry) {
+    Subject? subject;
+    try {
+      subject = _subjects.firstWhere((s) => s.id == entry.subjectId);
+    } catch (_) {}
+    if (subject == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => EntryDetailSheet(
+        entry: entry,
+        subject: subject!,
+        onDelete: () async {
+          final nav = Navigator.of(context);
+          await ScheduleService.deleteEntry(entry.id);
+          if (!mounted) return;
+          nav.pop();
+          _load();
+        },
+        onEdit: () async {
+          final nav = Navigator.of(context);
+          nav.pop();
+          await nav.pushNamed(Routes.addSubject, arguments: subject);
+          _load();
+        },
+      ),
+    );
   }
 
   // ── Build ────────────────────────────────────────────────────────────────────
@@ -155,7 +196,7 @@ class _ScheduleTabState extends State<ScheduleTab>
         children: [
           Column(
             children: [
-              _ScheduleHeader(
+              ScheduleHeader(
                 schedule: _schedule,
                 currentWeek: _currentWeek,
                 onToggleWeek: _toggleWeek,
@@ -167,7 +208,7 @@ class _ScheduleTabState extends State<ScheduleTab>
               ),
               Expanded(
                 child: _schedule.entries.isEmpty
-                    ? _EmptyState(
+                    ? ScheduleEmptyState(
                         onAdd: () async {
                           await Navigator.pushNamed(
                               context, Routes.addSubject);
@@ -179,15 +220,19 @@ class _ScheduleTabState extends State<ScheduleTab>
                         schedule: _schedule,
                         subjects: _subjects,
                         currentWeek: _currentWeek,
-                        onEntryTap: (entry) => _onEntryTap(context, entry),
+                        onEntryTap: (entry) =>
+                            _onEntryTap(context, entry),
                         onEntryMoved: (entry, newDay, start, end) async {
-                          final conflict = _schedule.entries.where((e) =>
-                            e.id != entry.id &&
-                            e.dayOfWeek == newDay &&
-                            e.startTime.hour == start.hour
-                          ).toList();
+                          final conflict = _schedule.entries
+                              .where((e) =>
+                                  e.id != entry.id &&
+                                  e.dayOfWeek == newDay &&
+                                  e.startTime.hour == start.hour)
+                              .toList();
                           final updated = entry.copyWith(
-                              dayOfWeek: newDay, startTime: start, endTime: end);
+                              dayOfWeek: newDay,
+                              startTime: start,
+                              endTime: end);
                           await ScheduleService.updateEntry(updated);
                           if (conflict.isNotEmpty) {
                             final old = entry.startTime;
@@ -237,11 +282,11 @@ class _ScheduleTabState extends State<ScheduleTab>
                           strokeWidth: 2.5,
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.lg),
+                      const SizedBox(height: AppSpacing.md),
                       Text(
-                        'Analyzing photo…',
+                        'Reading timetable...',
                         style: GoogleFonts.outfit(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
@@ -259,667 +304,8 @@ class _ScheduleTabState extends State<ScheduleTab>
                 ),
               ),
             ),
-
-        ],
-      ),
-    );
-  }
-
-  void _onEntryTap(BuildContext context, ScheduleEntry entry) {
-    Subject? subject;
-    try {
-      subject = _subjects.firstWhere((s) => s.id == entry.subjectId);
-    } catch (_) {}
-    if (subject == null) return;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _EntryDetailSheet(
-        entry: entry,
-        subject: subject!,
-        onDelete: () async {
-          final nav = Navigator.of(context);
-          await ScheduleService.deleteEntry(entry.id);
-          if (!mounted) return;
-          nav.pop();
-          _load();
-        },
-        onEdit: () async {
-          final nav = Navigator.of(context);
-          nav.pop();
-          await nav.pushNamed(Routes.addSubject, arguments: subject);
-          _load();
-        },
-      ),
-    );
-  }
-
-}
-
-// ── Header ────────────────────────────────────────────────────────────────────
-
-class _ScheduleHeader extends StatelessWidget {
-  final Schedule schedule;
-  final WeekType currentWeek;
-  final VoidCallback onToggleWeek;
-  final VoidCallback onScanPhoto;
-  final VoidCallback onAdd;
-
-  const _ScheduleHeader({
-    required this.schedule,
-    required this.currentWeek,
-    required this.onToggleWeek,
-    required this.onScanPhoto,
-    required this.onAdd,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Container(
-        color: AppColors.scaffoldBg,
-        padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg, AppSpacing.md, AppSpacing.sm, AppSpacing.xs),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Schedule',
-                  style: GoogleFonts.outfit(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                if (schedule.entries.isNotEmpty)
-                  Text(
-                    '${schedule.entries.length} classes',
-                    style: GoogleFonts.outfit(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-              ],
-            ),
-            const Spacer(),
-            if (schedule.useAlternatingWeeks) ...[
-              _WeekPill(currentWeek: currentWeek, onToggle: onToggleWeek),
-              const SizedBox(width: AppSpacing.xs),
-            ],
-            _HeaderIcon(
-              icon: Icons.camera_alt_outlined,
-              tooltip: 'Scan photo',
-              onTap: onScanPhoto,
-            ),
-            _AddButton(onTap: onAdd),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WeekPill extends StatelessWidget {
-  final WeekType currentWeek;
-  final VoidCallback onToggle;
-
-  const _WeekPill(
-      {required this.currentWeek, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onToggle,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppColors.primaryLight,
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          border: Border.all(color: AppColors.primary.withAlpha(80)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              currentWeek.label,
-              style: GoogleFonts.outfit(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-                letterSpacing: 0.3,
-              ),
-            ),
-            const SizedBox(width: 3),
-            const Icon(Icons.swap_horiz_rounded,
-                size: 13, color: AppColors.primary),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderIcon extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  const _HeaderIcon(
-      {required this.icon, required this.tooltip, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: IconButton(
-        icon: Icon(icon, color: AppColors.textSecondary, size: 22),
-        onPressed: onTap,
-        splashRadius: 20,
-      ),
-    );
-  }
-}
-
-class _AddButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        margin: const EdgeInsets.only(left: 4, right: 8),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withAlpha(70),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
-      ),
-    );
-  }
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  final VoidCallback onAdd;
-  final VoidCallback onScanPhoto;
-
-  const _EmptyState({required this.onAdd, required this.onScanPhoto});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryLight,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.grid_view_rounded,
-                  size: 36, color: AppColors.primary),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'No classes yet',
-              style: GoogleFonts.outfit(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Add manually or scan your\nprinted timetable with AI.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                color: AppColors.textTertiary,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: onAdd,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add Subject'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg)),
-                  textStyle: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w600, fontSize: 15),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: onScanPhoto,
-                icon: const Icon(Icons.camera_alt_outlined,
-                    color: AppColors.textSecondary, size: 18),
-                label: Text(
-                  'Scan Timetable Photo',
-                  style: GoogleFonts.outfit(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: const BorderSide(color: AppColors.surfaceBorder),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Photo source bottom sheet ────────────────────────────────────────────────
-
-class _PhotoSourceSheet extends StatelessWidget {
-  const _PhotoSourceSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.surfaceBorder),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 24,
-              offset: Offset(0, 8))
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Import Timetable',
-                style: GoogleFonts.outfit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'AI will read and extract your schedule.',
-                style: GoogleFonts.outfit(
-                    fontSize: 13, color: AppColors.textTertiary),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _SourceTile(
-                icon: Icons.camera_alt_rounded,
-                label: 'Take Photo',
-                sub: 'Point camera at printed timetable',
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _SourceTile(
-                icon: Icons.photo_library_outlined,
-                label: 'Choose from Gallery',
-                sub: 'Pick a saved image',
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel',
-                      style: GoogleFonts.outfit(
-                          color: AppColors.textTertiary)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SourceTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String sub;
-  final VoidCallback onTap;
-
-  const _SourceTile({
-    required this.icon,
-    required this.label,
-    required this.sub,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.scaffoldBg,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.surfaceBorder),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: const Icon(Icons.camera_alt_outlined,
-                  color: AppColors.primary, size: 22),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: GoogleFonts.outfit(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      )),
-                  Text(sub,
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        color: AppColors.textTertiary,
-                      )),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded,
-                color: AppColors.textTertiary, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Merge dialog ──────────────────────────────────────────────────────────────
-
-class _MergeDialog extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Existing schedule found',
-          style: GoogleFonts.outfit(
-              fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-      content: Text(
-        'Do you want to add these classes to your existing schedule, or replace everything?',
-        style: GoogleFonts.outfit(
-            color: AppColors.textSecondary, fontSize: 13, height: 1.5),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'cancel'),
-          child: Text('Cancel',
-              style: GoogleFonts.outfit(color: AppColors.textTertiary)),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'add'),
-          child: Text('Add to existing',
-              style: GoogleFonts.outfit(
-                  color: AppColors.primary, fontWeight: FontWeight.w600)),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'replace'),
-          style: TextButton.styleFrom(foregroundColor: AppColors.error),
-          child: Text('Replace all',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Entry detail sheet ────────────────────────────────────────────────────────
-
-class _EntryDetailSheet extends StatefulWidget {
-  final ScheduleEntry entry;
-  final Subject subject;
-  final VoidCallback onDelete;
-  final VoidCallback onEdit;
-
-  const _EntryDetailSheet({
-    required this.entry,
-    required this.subject,
-    required this.onDelete,
-    required this.onEdit,
-  });
-
-  @override
-  State<_EntryDetailSheet> createState() => _EntryDetailSheetState();
-}
-
-class _EntryDetailSheetState extends State<_EntryDetailSheet> {
-  bool _notifyEnabled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadNotifState();
-  }
-
-  void _loadNotifState() {
-    final raw = StorageService.getString(StorageKeys.classNotifications) ?? '';
-    final ids = raw.isEmpty ? <String>[] : raw.split(',');
-    setState(() => _notifyEnabled = ids.contains(widget.entry.id));
-  }
-
-  Future<void> _toggleNotification(bool value) async {
-    final raw = StorageService.getString(StorageKeys.classNotifications) ?? '';
-    final ids = raw.isEmpty ? <String>[] : raw.split(',').toList();
-
-    if (value) {
-      if (!ids.contains(widget.entry.id)) ids.add(widget.entry.id);
-      await NotificationService.scheduleClassNotification(
-        widget.entry.id,
-        widget.subject.name,
-        widget.entry.dayOfWeek,
-        widget.entry.startTime.hour,
-        widget.entry.startTime.minute,
-      );
-    } else {
-      ids.remove(widget.entry.id);
-      await NotificationService.cancelClassNotification(widget.entry.id);
-    }
-
-    await StorageService.saveString(
-        StorageKeys.classNotifications, ids.join(','));
-    if (mounted) setState(() => _notifyEnabled = value);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Color(widget.subject.colorValue);
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-        border: Border(top: BorderSide(color: AppColors.surfaceBorder)),
-      ),
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // drag handle
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 4,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.subject.name,
-                        style: GoogleFonts.outfit(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        '${widget.entry.startTime.format24h()} – ${widget.entry.endTime.format24h()}',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          color: color,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined,
-                      color: AppColors.textSecondary, size: 20),
-                  onPressed: widget.onEdit,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: AppColors.error, size: 20),
-                  onPressed: widget.onDelete,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: AppSpacing.md),
-            const Divider(color: AppColors.surfaceBorder, height: 1),
-            const SizedBox(height: AppSpacing.md),
-
-            // Notification toggle
-            Row(
-              children: [
-                const Icon(Icons.notifications_outlined,
-                    size: 16, color: AppColors.textTertiary),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    'Notify 10 min before',
-                    style: GoogleFonts.outfit(
-                        color: AppColors.textSecondary, fontSize: 14),
-                  ),
-                ),
-                Switch(
-                  value: _notifyEnabled,
-                  onChanged: _toggleNotification,
-                  activeThumbColor: AppColors.primary,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xs),
-
-            if (widget.subject.teacher != null)
-              _DetailRow(icon: Icons.person_outline, text: widget.subject.teacher!),
-            if (widget.entry.room != null || widget.subject.room != null)
-              _DetailRow(
-                  icon: Icons.room_outlined,
-                  text: widget.entry.room ?? widget.subject.room!),
-            _DetailRow(
-                icon: Icons.calendar_today_outlined,
-                text: widget.entry.weekType.label),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _DetailRow({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: AppColors.textTertiary),
-          const SizedBox(width: AppSpacing.sm),
-          Text(text,
-              style: GoogleFonts.outfit(
-                  color: AppColors.textSecondary, fontSize: 14)),
         ],
       ),
     );
   }
 }
-

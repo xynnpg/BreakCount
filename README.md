@@ -29,6 +29,12 @@ It's built by a student, for students. No ads, no tracking, no nonsense.
 ### 📅 Countdown
 The main screen shows a big countdown to your next school break. Tap the number to cycle the display through **days → hours → minutes → seconds → milliseconds** — useful when a break is close enough to feel every tick. There's also a school year progress ring so you always know exactly where you are in the year. Underneath, you'll see a timeline of every upcoming break so nothing sneaks up on you.
 
+The countdown screen also surfaces two extra sections directly below the timeline:
+
+**Your Vibe** — a card showing your current personality and mood emoji (calculated from how far away the next break is, with a Friday afternoon boost and Monday morning dip built in). Tap it to see nearby students. See [Nearby Students](#-nearby-students) below.
+
+**Achievements** — your rank badge, a progress bar, and the three most recently unlocked achievements. Tap "View All" for the full gallery.
+
 ### 🗓️ Weekly Schedule
 A full Monday–Friday timetable grid. Add subjects with color-coding and room info, and BreakCount will show you what class you're in right now (or what's coming up next) directly on the home screen. Supports A/B week rotation for schools that alternate timetables.
 
@@ -49,6 +55,24 @@ The fastest way to set up your schedule. Point your camera at a printed timetabl
 - **No key at all?** BreakCount has a built-in fallback proxy that gives you **5 free scans per day** with zero setup
 
 After scanning, you get a full review screen where you can edit or swipe-delete any entry before saving. Nothing gets applied without you checking it first.
+
+### 🏆 Achievements
+25 achievements across five categories: **School Progress**, **Monday Club**, **Exams & Schedule**, **Break Milestones**, and **Power User**. Rarities range from Bronze to Platinum, with a handful of hidden **Secret** achievements that show `???` until you trigger them (try opening the app at 2 AM, or adding an exam the night before).
+
+Your rank updates as you unlock more: Newcomer → Rookie → Survivor → Veteran → Master → Legend.
+
+Every unlock fires a **push notification** so you never miss one, even when the app is in the background.
+
+### 🎭 Personality & Nearby Students
+Pick a personality in Settings → **Widget Personality**:
+- 🔥 **Hype** — "LET'S GO only 14 days!!!"
+- 😎 **Chill** — "eh, 14 days"
+- 🎭 **Dramatic** — "I CANNOT 14 MORE DAYS"
+- 🙃 **Sarcastic** — "14 days. Cool. Fine. Whatever."
+
+Your personality shows on your home screen widget and as a **Vibe card** on the countdown screen. The card also shows a live mood emoji — 💀 when a break is months away, 🤩 when it's basically here — with smart adjustments for Friday afternoons and Monday mornings.
+
+Tap the Vibe card to open the **Nearby Students** screen: a live Bluetooth radar that discovers other BreakCount users around you. Each card shows their anonymous name, personality, and how many subjects/classes they have set up. Tap "Copy" to pull their schedule directly to your device.
 
 ### 📳 Shake to Share
 Shake your phone near a classmate's at the same time and BreakCount opens a share sheet to exchange schedules over Bluetooth — no Wi-Fi, no QR codes, no accounts. Works between two Android phones with the app installed.
@@ -151,6 +175,14 @@ When you first open BreakCount, you'll go through a short onboarding:
 2. Both students shake at the same time (firm shake, ~1.5 seconds)
 3. A bottom sheet pops up — tap **Share** to send or **Import** to receive
 4. That's it
+
+### Nearby Students
+
+1. On the countdown screen, tap the **Your Vibe** card
+2. BreakCount starts scanning for other students running the app nearby
+3. Each discovered student card shows their name, personality, and schedule stats
+4. Tap **Copy** on any card to pull their schedule to your device
+5. If nobody shows up, make sure the other person also has BreakCount open — the app needs to be in the foreground on both devices
 
 ---
 

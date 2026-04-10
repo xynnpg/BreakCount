@@ -78,12 +78,21 @@ class WidgetService {
         // schedule parse failure — leave nulls
       }
 
+      // ── Vibe widget data ──────────────────────────────────────────────────
+      final vibeData = _computeVibe(
+        daysUntilBreak: daysUntilBreak,
+        isOnBreak: isOnBreak,
+      );
+
       // ── Save to HomeWidget SharedPreferences ──────────────────────────────
       await HomeWidget.saveWidgetData<int>('days_until_break', daysUntilBreak);
       await HomeWidget.saveWidgetData<String>('next_break_name', nextBreakName);
       await HomeWidget.saveWidgetData<int>('year_progress', yearProgress);
       await HomeWidget.saveWidgetData<int>('days_until_summer', daysUntilSummer);
       await HomeWidget.saveWidgetData<bool>('is_on_break', isOnBreak);
+      await HomeWidget.saveWidgetData<String>('vibe_emoji', vibeData['emoji']!);
+      await HomeWidget.saveWidgetData<String>('vibe_copy', vibeData['copy']!);
+      await HomeWidget.saveWidgetData<String>('vibe_season', vibeData['season']!);
       await HomeWidget.saveWidgetData<String?>('current_class', currentClass);
       await HomeWidget.saveWidgetData<String?>('current_class_time', currentClassTime);
       await HomeWidget.saveWidgetData<String?>('next_class', nextClass);
@@ -106,6 +115,123 @@ class WidgetService {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  /// Computes vibe widget data based on days until break and time of day.
+  static Map<String, String> _computeVibe({
+    required int daysUntilBreak,
+    required bool isOnBreak,
+  }) {
+    final now = DateTime.now();
+    final persona =
+        StorageService.getString(StorageKeys.widgetPersona) ?? 'hype';
+
+    // Determine season
+    final month = now.month;
+    String season;
+    if (month == 12 || month == 1) {
+      season = 'christmas';
+    } else if (month >= 6 && month <= 8) {
+      season = 'summer';
+    } else if (month >= 3 && month <= 5) {
+      season = 'spring';
+    } else {
+      season = 'neutral';
+    }
+
+    // Base mood level (0=dead, 6=freedom)
+    int mood;
+    if (isOnBreak) {
+      mood = 6;
+    } else if (daysUntilBreak < 0) {
+      mood = 1;
+    } else if (daysUntilBreak > 60) {
+      mood = 0;
+    } else if (daysUntilBreak > 30) {
+      mood = 1;
+    } else if (daysUntilBreak > 15) {
+      mood = 2;
+    } else if (daysUntilBreak > 7) {
+      mood = 3;
+    } else if (daysUntilBreak > 2) {
+      mood = 4;
+    } else {
+      mood = 5;
+    }
+
+    // Context adjustments
+    final isFridayAfternoon =
+        now.weekday == DateTime.friday && now.hour >= 15;
+    final isMondayMorning =
+        now.weekday == DateTime.monday && now.hour < 9;
+
+    if (isFridayAfternoon && mood < 6) mood = (mood + 1).clamp(0, 5);
+    if (isMondayMorning && mood > 0) mood = (mood - 1).clamp(0, 6);
+
+    // Emoji by mood
+    const emojis = ['💀', '😩', '😐', '👀', '🔥', '🤩', '🏖️'];
+    final emoji = emojis[mood.clamp(0, 6)];
+
+    // Copy by mood + persona
+    final n = daysUntilBreak.clamp(0, 9999);
+    final copy = _vibeCopy(mood: mood, days: n, persona: persona, isOnBreak: isOnBreak);
+
+    return {'emoji': emoji, 'copy': copy, 'season': season};
+  }
+
+  static String _vibeCopy({
+    required int mood,
+    required int days,
+    required String persona,
+    required bool isOnBreak,
+  }) {
+    if (isOnBreak) {
+      return switch (persona) {
+        'chill' => 'enjoy the break',
+        'dramatic' => 'FREEDOM AT LAST',
+        'sarcastic' => 'ok fine, no school',
+        _ => 'YOU MADE IT!!!',
+      };
+    }
+    return switch (mood) {
+      0 => switch (persona) {
+          'chill' => 'eh, $days days',
+          'dramatic' => 'I CANNOT $days MORE DAYS',
+          'sarcastic' => '$days days. Cool. Fine.',
+          _ => 'send help. $days days.',
+        },
+      1 => switch (persona) {
+          'chill' => '$days days left',
+          'dramatic' => 'still $days days. why.',
+          'sarcastic' => '$days days. we survive.',
+          _ => '$days days... keep going!',
+        },
+      2 => switch (persona) {
+          'chill' => '$days days to go',
+          'dramatic' => 'only $days more days',
+          'sarcastic' => '$days days. getting there.',
+          _ => '$days days! almost!',
+        },
+      3 => switch (persona) {
+          'chill' => '$days days left',
+          'dramatic' => 'the light! $days days!',
+          'sarcastic' => 'ok $days days, not bad',
+          _ => '$days days! can you see it?!',
+        },
+      4 => switch (persona) {
+          'chill' => 'almost there, $days days',
+          'dramatic' => 'SO CLOSE $days DAYS',
+          'sarcastic' => '$days days. fine i\'m hyped',
+          _ => 'SO CLOSE!! $days days!!!',
+        },
+      5 => switch (persona) {
+          'chill' => '$days more day(s)',
+          'dramatic' => 'TOMORROW!!',
+          'sarcastic' => '$days day(s). barely.',
+          _ => '$days DAY(S)!! LET\'S GO!!',
+        },
+      _ => 'enjoy every second!',
+    };
+  }
 
   /// Resolves current week type from storage (same logic as ScheduleTab).
   static WeekType _currentWeekType() {

@@ -56,12 +56,15 @@
         android:layout_marginEnd="14dp">
 
         <TextView
+            android:id="@+id/tv_vibe_copy"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="days to"
-            android:textSize="12sp"
+            android:text=""
+            android:textSize="10sp"
             android:textColor="#FFA89888"
             android:fontFamily="sans-serif"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:includeFontPadding="false" />
 
         <TextView

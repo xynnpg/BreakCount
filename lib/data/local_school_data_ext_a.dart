@@ -234,7 +234,7 @@ class LocalDataExtA {
           id: 'be_pasen',
           name: 'Easter Break',
           startDate: DateTime(2026, 4, 6),
-          endDate: DateTime(2026, 4, 17),
+          endDate: DateTime(2026, 4, 19),
         ),
         SchoolBreak(
           id: 'be_zomer',

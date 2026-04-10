@@ -66,6 +66,21 @@
         android:ellipsize="end"
         android:includeFontPadding="false" />
 
+    <!-- Vibe copy — mood-aware one-liner -->
+    <TextView
+        android:id="@+id/tv_vibe_copy"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text=""
+        android:textSize="9sp"
+        android:textColor="#FFA89888"
+        android:fontFamily="sans-serif"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:includeFontPadding="false" />
+
     <!-- Year Progress row: label + percentage + bar -->
     <LinearLayout
         android:layout_width="match_parent"

@@ -65,7 +65,7 @@ class LocalDataCore {
           id: 'ro_iarna',
           name: 'Winter Break',
           startDate: DateTime(2025, 12, 20),
-          endDate: DateTime(2026, 1, 11),
+          endDate: DateTime(2026, 1, 7),
         ),
         SchoolBreak(
           id: 'ro_intersem',
@@ -77,7 +77,7 @@ class LocalDataCore {
           id: 'ro_primavara',
           name: 'Spring Break',
           startDate: DateTime(2026, 4, 4),
-          endDate: DateTime(2026, 4, 19),
+          endDate: DateTime(2026, 4, 14),
         ),
         SchoolBreak(
           id: 'ro_vara',

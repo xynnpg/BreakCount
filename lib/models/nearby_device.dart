@@ -8,6 +8,8 @@ class NearbyDevice {
   final NearbyDeviceStatus status;
   // Internal dedup key — not shown in UI
   final String anonId;
+  // Personality persona: hype | chill | dramatic | sarcastic
+  final String persona;
 
   const NearbyDevice({
     required this.endpointId,
@@ -16,9 +18,10 @@ class NearbyDevice {
     required this.entryCount,
     required this.status,
     required this.anonId,
+    this.persona = 'hype',
   });
 
-  /// Parses nickname format: "BC:Name:subjects:entries:anonId"
+  /// Parses nickname format: "BC:Name:subjects:entries:anonId[:persona]"
   /// Returns null if nickname doesn't start with "BC:" (not a BreakCount app).
   static NearbyDevice? fromNickname(String endpointId, String nickname) {
     if (!nickname.startsWith('BC:')) return null;
@@ -29,6 +32,7 @@ class NearbyDevice {
         final subjects = int.tryParse(parts[2]) ?? 0;
         final entries = int.tryParse(parts[3]) ?? 0;
         final anon = parts[4];
+        final persona = parts.length >= 6 && parts[5].isNotEmpty ? parts[5] : 'hype';
         return NearbyDevice(
           endpointId: endpointId,
           displayName: name.isEmpty ? 'Student' : name,
@@ -36,6 +40,7 @@ class NearbyDevice {
           entryCount: entries,
           status: NearbyDeviceStatus.discovered,
           anonId: anon,
+          persona: persona,
         );
       }
     } catch (_) {}
@@ -49,6 +54,7 @@ class NearbyDevice {
     int? entryCount,
     NearbyDeviceStatus? status,
     String? anonId,
+    String? persona,
   }) =>
       NearbyDevice(
         endpointId: endpointId ?? this.endpointId,
@@ -57,5 +63,6 @@ class NearbyDevice {
         entryCount: entryCount ?? this.entryCount,
         status: status ?? this.status,
         anonId: anonId ?? this.anonId,
+        persona: persona ?? this.persona,
       );
 }

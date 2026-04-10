@@ -8,6 +8,8 @@ import '../screens/reminders_screen.dart';
 import '../screens/add_reminder_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/stats_screen.dart';
+import '../screens/achievements_screen.dart';
+import '../screens/nearby_users_screen.dart';
 import '../models/subject.dart';
 import '../models/reminder.dart';
 
@@ -21,6 +23,8 @@ class Routes {
   static const String addReminder = '/add-reminder';
   static const String settings = '/settings';
   static const String stats = '/stats';
+  static const String achievements = '/achievements';
+  static const String nearbyUsers = '/nearby-users';
 }
 
 Route<dynamic> generateRoute(RouteSettings settings) {
@@ -54,6 +58,12 @@ Route<dynamic> generateRoute(RouteSettings settings) {
 
     case Routes.stats:
       return _slide(const StatsScreen());
+
+    case Routes.achievements:
+      return _slide(const AchievementsScreen());
+
+    case Routes.nearbyUsers:
+      return _slide(const NearbyUsersScreen());
 
     default:
       return _slide(const HomeScreen());

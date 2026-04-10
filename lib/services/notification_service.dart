@@ -57,6 +57,14 @@ class NotificationService {
             importance: Importance.high,
           ),
         );
+        await androidPlugin.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'breakcount_achievements',
+            'Achievements',
+            description: 'Notifies when a new achievement is unlocked',
+            importance: Importance.high,
+          ),
+        );
       }
 
       _initialized = true;
@@ -455,6 +463,32 @@ class NotificationService {
     } catch (e) {
       debugPrint('scheduleTestNotification error: $e');
       return e.toString();
+    }
+  }
+
+  // ------------------------------------------------- achievement unlock notif --
+
+  static Future<void> showAchievementUnlocked(
+      String name, String rarityLabel) async {
+    if (!_initialized) return;
+    try {
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          'breakcount_achievements',
+          'Achievements',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      );
+      await _plugin.show(
+        700000000 + name.hashCode.abs() % 200000000,
+        'Achievement Unlocked! 🏆',
+        '$name — $rarityLabel',
+        details,
+      );
+    } catch (e) {
+      debugPrint('showAchievementUnlocked error: $e');
     }
   }
 

@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../app/constants.dart';
 
-/// Flip-clock countdown using the light indigo theme.
+/// Flip-clock countdown — premium upgrade:
+/// • stronger digit card shadows
+/// • horizontal center line (mechanical flip-clock visual)
+/// • dot separators instead of text ":"
+/// • wider label letter-spacing
 class AnimatedCounter extends StatelessWidget {
   final int days;
   final int hours;
@@ -28,12 +32,12 @@ class AnimatedCounter extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _CountUnit(value: days, label: 'DAYS', accentColor: accent),
-          _Separator(),
+          const _DotSeparator(),
           _CountUnit(value: hours, label: 'HRS', accentColor: accent),
-          _Separator(),
+          const _DotSeparator(),
           _CountUnit(value: minutes, label: 'MIN', accentColor: accent),
           if (showSeconds) ...[
-            _Separator(),
+            const _DotSeparator(),
             _CountUnit(value: seconds, label: 'SEC', accentColor: accent),
           ],
         ],
@@ -42,18 +46,35 @@ class AnimatedCounter extends StatelessWidget {
   }
 }
 
-class _Separator extends StatelessWidget {
+/// Two stacked circles replacing the old ":" text separator.
+class _DotSeparator extends StatelessWidget {
+  const _DotSeparator();
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 22, left: 3, right: 3),
-      child: Text(
-        ':',
-        style: GoogleFonts.outfit(
-          fontSize: 28,
-          fontWeight: FontWeight.w300,
-          color: AppColors.textTertiary,
-        ),
+      padding: const EdgeInsets.only(bottom: 22, left: 4, right: 4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 5,
+            height: 5,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: 5,
+            height: 5,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -90,7 +111,7 @@ class _CountUnit extends StatelessWidget {
             fontSize: 10,
             fontWeight: FontWeight.w600,
             color: AppColors.textTertiary,
-            letterSpacing: 2,
+            letterSpacing: 2.5,
           ),
         ),
       ],
@@ -174,40 +195,58 @@ class _FlipDigitState extends State<_FlipDigit>
   }
 
   Widget _buildDigitCard(String digit) {
-    return Container(
+    return SizedBox(
       width: 56,
       height: 74,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFFFFBF8), Color(0xFFFFF2E8)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorder),
-        boxShadow: [
-          BoxShadow(
-            color: widget.accentColor.withAlpha(30),
-            blurRadius: 16,
-            offset: const Offset(0, 5),
+      child: Stack(
+        children: [
+          Container(
+            width: 56,
+            height: 74,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFFFFBF8), Color(0xFFFFF2E8)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.surfaceBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.accentColor.withAlpha(50),
+                  blurRadius: 20,
+                  offset: const Offset(0, 5),
+                ),
+                const BoxShadow(
+                  color: Color(0x0A000000),
+                  blurRadius: 3,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              digit,
+              style: GoogleFonts.outfit(
+                fontSize: 38,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                height: 1,
+                letterSpacing: -1.5,
+              ),
+            ),
           ),
-          const BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 3,
-            offset: Offset(0, 1),
+          // Center line — mechanical flip-clock visual cue
+          Positioned(
+            top: 36,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 0.5,
+              color: AppColors.surfaceBorder,
+            ),
           ),
         ],
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        digit,
-        style: GoogleFonts.outfit(
-          fontSize: 38,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
-          height: 1,
-          letterSpacing: -1.5,
-        ),
       ),
     );
   }

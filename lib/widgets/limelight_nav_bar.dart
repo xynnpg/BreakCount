@@ -49,6 +49,11 @@ class _LimelightNavBarState extends State<LimelightNavBar> {
                 blurRadius: 24,
                 offset: Offset(0, -4), // upward shadow for floating feel
               ),
+              BoxShadow(
+                color: Color(0x08000000),
+                blurRadius: 2,
+                offset: Offset(0, -1), // inner top shadow — lifts bar from content
+              ),
             ],
           ),
           child: LayoutBuilder(
@@ -191,7 +196,7 @@ class _SpotlightPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Color(0x1E6F4E37), // coffee/12 at top
+          Color(0x286F4E37), // coffee/16 at top — more visible spotlight
           Color(0x006F4E37), // transparent at bottom
         ],
       ).createShader(rect);

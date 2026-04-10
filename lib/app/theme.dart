@@ -166,7 +166,7 @@ class AppTheme {
       ),
       headlineSmall: GoogleFonts.outfit(
         fontSize: 20,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
       ),
       titleLarge: GoogleFonts.outfit(
@@ -203,7 +203,7 @@ class AppTheme {
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
-        letterSpacing: 0.5,
+        letterSpacing: 1.0,
       ),
     );
   }

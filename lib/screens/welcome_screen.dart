@@ -108,7 +108,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
           margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: active ? 20 : 6,
+          width: active ? 24 : 5,
           height: 6,
           decoration: BoxDecoration(
             color: active ? AppColors.primary : AppColors.surfaceBorder,
@@ -189,24 +189,35 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     SizedBox(
                       width: double.infinity,
                       height: 50,
-                      child: FilledButton(
-                        onPressed: _nextPage,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppColors.primary, Color(0xFF8B6347)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
                           ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [AppElevation.mid],
                         ),
-                        child: Text(
-                          'Next',
-                          style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: -0.2,
+                        child: FilledButton(
+                          onPressed: _nextPage,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            'Next',
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              letterSpacing: -0.2,
+                            ),
                           ),
                         ),
                       ),

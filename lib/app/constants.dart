@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
 
 /// All magic numbers, colors, and string constants live here.
 class AppColors {
@@ -78,6 +78,34 @@ class AppRadius {
   static const double full = 999;
 }
 
+/// Named elevation shadow tokens — use these instead of inline BoxShadow everywhere.
+class AppElevation {
+  static const BoxShadow low = BoxShadow(
+    color: Color(0x0A6F4E37),
+    blurRadius: 8,
+    spreadRadius: 0,
+    offset: Offset(0, 2),
+  );
+  static const BoxShadow mid = BoxShadow(
+    color: Color(0x0D6F4E37),
+    blurRadius: 20,
+    spreadRadius: 0,
+    offset: Offset(0, 6),
+  );
+  static const BoxShadow high = BoxShadow(
+    color: Color(0x126F4E37),
+    blurRadius: 40,
+    spreadRadius: 0,
+    offset: Offset(0, 12),
+  );
+  static const BoxShadow ambient = BoxShadow(
+    color: Color(0x04000000),
+    blurRadius: 4,
+    spreadRadius: 0,
+    offset: Offset(0, 1),
+  );
+}
+
 class AppDurations {
   static const Duration pageTransition = Duration(milliseconds: 400);
   static const Duration cardEntrance = Duration(milliseconds: 300);
@@ -108,6 +136,8 @@ class StorageKeys {
   static const String classNotifications = 'class_notifications';
   static const String schoolProfile = 'school_profile';
   static const String autoBackup = 'auto_backup';
+  static const String widgetPersona = 'widget_persona';
+  static const String achievements = 'achievements_v1';
 }
 
 /// Countries with locally bundled, verified school year data (2025-2026).

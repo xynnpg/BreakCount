@@ -168,7 +168,11 @@ class WelcomePage2 extends StatelessWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFFFDF0E6), AppColors.primaryLight],
+                        ),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(f.$1, color: AppColors.primary, size: 22),

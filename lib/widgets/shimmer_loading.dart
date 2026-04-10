@@ -56,7 +56,7 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
               end: Alignment(_animation.value + 0.5, 0),
               colors: const [
                 AppColors.bgSurface,
-                Color(0xFF2A2A50),
+                Color(0xFFEDD9C8),
                 AppColors.bgSurface,
               ],
             ),

@@ -18,6 +18,8 @@ private data class WidgetData(
     val yearProgress: Int,
     val daysUntilSummer: Int,
     val isOnBreak: Boolean,
+    val vibeEmoji: String,
+    val vibeCopy: String,
     val currentClass: String?,
     val currentClassTime: String?,
     val nextClass: String?,
@@ -33,6 +35,8 @@ private fun loadData(ctx: Context): WidgetData {
             yearProgress      = prefs.getInt("year_progress", 0),
             daysUntilSummer   = prefs.getInt("days_until_summer", -1),
             isOnBreak         = prefs.getBoolean("is_on_break", false),
+            vibeEmoji         = prefs.getString("vibe_emoji", null) ?: "📅",
+            vibeCopy          = prefs.getString("vibe_copy", null) ?: "",
             currentClass      = prefs.getString("current_class", null),
             currentClassTime  = prefs.getString("current_class_time", null),
             nextClass         = prefs.getString("next_class", null),
@@ -46,6 +50,8 @@ private fun loadData(ctx: Context): WidgetData {
             yearProgress = 0,
             daysUntilSummer = -1,
             isOnBreak = false,
+            vibeEmoji = "📅",
+            vibeCopy = "",
             currentClass = null,
             currentClassTime = null,
             nextClass = null,
@@ -88,6 +94,7 @@ class BreakCountWidget2x1Provider : AppWidgetProvider() {
                 views.setTextViewText(R.id.tv_days, formatDays(data.daysUntilBreak, data.isOnBreak))
                 views.setTextViewText(R.id.tv_break_label, formatBreakLabel(data.nextBreakName, data.isOnBreak))
                 views.setTextViewText(R.id.tv_progress, formatProgress(data.yearProgress))
+                views.setTextViewText(R.id.tv_vibe_emoji, data.vibeEmoji)
                 appWidgetManager.updateAppWidget(id, views)
                 Log.d(TAG, "2x1 updated id=$id")
             }
@@ -116,6 +123,7 @@ class BreakCountWidget2x2Provider : AppWidgetProvider() {
                 views.setTextViewText(R.id.tv_progress, formatProgress(data.yearProgress))
                 views.setProgressBar(R.id.progress_bar, 100, data.yearProgress, false)
                 views.setTextViewText(R.id.tv_summer_days, formatSummer(data.daysUntilSummer))
+                views.setTextViewText(R.id.tv_vibe_copy, data.vibeCopy)
                 appWidgetManager.updateAppWidget(id, views)
                 Log.d(TAG, "2x2 updated id=$id")
             }
@@ -144,6 +152,7 @@ class BreakCountWidget4x1Provider : AppWidgetProvider() {
                 views.setTextViewText(R.id.tv_progress, formatProgress(data.yearProgress))
                 views.setProgressBar(R.id.progress_bar, 100, data.yearProgress, false)
                 views.setTextViewText(R.id.tv_summer_days, formatSummer(data.daysUntilSummer))
+                views.setTextViewText(R.id.tv_vibe_copy, data.vibeCopy)
                 appWidgetManager.updateAppWidget(id, views)
                 Log.d(TAG, "4x1 updated id=$id")
             }
@@ -153,3 +162,31 @@ class BreakCountWidget4x1Provider : AppWidgetProvider() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// 4x2 Provider  (4 cols wide x 2 rows tall) — reuses 4x1 layout
+// ---------------------------------------------------------------------------
+class BreakCountWidget4x2Provider : AppWidgetProvider() {
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        Log.d(TAG, "4x2 onUpdate, ids=${appWidgetIds.contentToString()}")
+        try {
+            val data = loadData(context)
+            for (id in appWidgetIds) {
+                val views = RemoteViews(context.packageName, R.layout.breakcount_widget_4x1)
+                views.setTextViewText(R.id.tv_days, formatDays(data.daysUntilBreak, data.isOnBreak))
+                views.setTextViewText(R.id.tv_break_label, formatBreakLabel(data.nextBreakName, data.isOnBreak))
+                views.setTextViewText(R.id.tv_progress, formatProgress(data.yearProgress))
+                views.setProgressBar(R.id.progress_bar, 100, data.yearProgress, false)
+                views.setTextViewText(R.id.tv_summer_days, formatSummer(data.daysUntilSummer))
+                views.setTextViewText(R.id.tv_vibe_copy, data.vibeCopy)
+                appWidgetManager.updateAppWidget(id, views)
+                Log.d(TAG, "4x2 updated id=$id")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "4x2 onUpdate FAILED", e)
+        }
+    }
+}

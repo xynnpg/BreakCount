@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:nearby_connections/nearby_connections.dart';
 
+import '../app/constants.dart';
 import '../models/nearby_device.dart';
 import '../models/schedule.dart';
 import '../models/subject.dart';
@@ -67,13 +68,16 @@ class MeshService {
     return id;
   }
 
-  /// Nickname format: "BC:Name:subjects:entries:anonId"
+  /// Nickname format: "BC:Name:subjects:entries:anonId:persona"
   String get _nickname {
     final name = (StorageService.getString('display_name') ?? 'Student')
         .replaceAll(':', '');
     final subjects = ScheduleService.getSubjects().length;
     final entries = ScheduleService.getSchedule().entries.length;
-    return 'BC:$name:$subjects:$entries:$_anonId';
+    final persona =
+        (StorageService.getString(StorageKeys.widgetPersona) ?? 'hype')
+            .replaceAll(':', '');
+    return 'BC:$name:$subjects:$entries:$_anonId:$persona';
   }
 
   Future<bool> start() async {

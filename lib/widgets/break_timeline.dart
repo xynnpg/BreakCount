@@ -56,7 +56,7 @@ class BreakTimeline extends StatelessWidget {
                           width: 2,
                           color: isPast
                               ? accentColor.withAlpha(40)
-                              : Colors.white.withAlpha(15),
+                              : AppColors.surfaceBorder,
                         ),
                       ),
                   ],
@@ -121,10 +121,10 @@ class _TimelineDot extends StatelessWidget {
       height: 10,
       margin: const EdgeInsets.only(top: 7, left: 15),
       decoration: BoxDecoration(
-        color: isPast ? accentColor.withAlpha(100) : Colors.white.withAlpha(40),
+        color: isPast ? accentColor.withAlpha(100) : AppColors.surfaceBorder,
         shape: BoxShape.circle,
         border: Border.all(
-          color: isPast ? accentColor.withAlpha(60) : Colors.white.withAlpha(20),
+          color: isPast ? accentColor.withAlpha(60) : AppColors.surfaceBorder,
         ),
       ),
     );
@@ -157,13 +157,13 @@ class _BreakCard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: isActive
-            ? accentColor.withAlpha(30)
-            : Colors.white.withAlpha(isPast ? 5 : 10),
+            ? accentColor.withAlpha(20)
+            : (isPast ? AppColors.scaffoldBg : Colors.white),
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: isActive
               ? accentColor.withAlpha(80)
-              : Colors.white.withAlpha(isPast ? 8 : 15),
+              : AppColors.surfaceBorder,
         ),
       ),
       child: Row(

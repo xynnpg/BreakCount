@@ -17,6 +17,7 @@ import 'services/break_notification_service.dart';
 import 'services/reminder_service.dart';
 import 'services/backup_service.dart';
 import 'services/storage_service.dart';
+import 'services/achievement_service.dart';
 import 'services/widget_service.dart';
 import 'utils/debug_log.dart';
 
@@ -90,6 +91,7 @@ void main() {
     await BreakNotificationService.init();
 
     AppThemeController.init(StorageService.getString(StorageKeys.themeId));
+    AchievementService.init();
 
     if (StorageService.getBool(StorageKeys.notificationsEnabled) != false) {
       final reminders = ReminderService.getUpcomingReminders();
