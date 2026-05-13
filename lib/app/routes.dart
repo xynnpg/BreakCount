@@ -9,7 +9,10 @@ import '../screens/add_reminder_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/stats_screen.dart';
 import '../screens/achievements_screen.dart';
+import '../screens/vibe_screen.dart';
 import '../screens/nearby_users_screen.dart';
+import '../screens/persona_picker_screen.dart';
+import '../screens/changelog_screen.dart';
 import '../models/subject.dart';
 import '../models/reminder.dart';
 
@@ -24,7 +27,10 @@ class Routes {
   static const String settings = '/settings';
   static const String stats = '/stats';
   static const String achievements = '/achievements';
+  static const String vibe = '/vibe';
   static const String nearbyUsers = '/nearby-users';
+  static const String personaPicker = '/persona-picker';
+  static const String changelog = '/changelog';
 }
 
 Route<dynamic> generateRoute(RouteSettings settings) {
@@ -62,8 +68,17 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case Routes.achievements:
       return _slide(const AchievementsScreen());
 
+    case Routes.vibe:
+      return _slide(const VibeScreen());
+
     case Routes.nearbyUsers:
       return _slide(const NearbyUsersScreen());
+
+    case Routes.personaPicker:
+      return _slide(const PersonaPickerScreen());
+
+    case Routes.changelog:
+      return _slide(const ChangelogScreen());
 
     default:
       return _slide(const HomeScreen());

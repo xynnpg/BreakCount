@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../app/constants.dart';
 import '../app/routes.dart';
+import '../app/theme_preset.dart';
 import '../services/storage_service.dart';
 import '../services/school_data_service.dart';
 import '../services/schedule_service.dart';
@@ -11,12 +13,16 @@ import '../services/reminder_service.dart';
 import '../services/notification_service.dart';
 import '../services/break_notification_service.dart';
 import '../services/backup_service.dart';
+import '../services/live_activity_service.dart';
 import '../models/school_year.dart';
 import '../data/school_profiles_data.dart';
 import '../widgets/glassmorphic_card.dart';
 import '../widgets/backup_sheet.dart';
+import '../widgets/theme_picker_grid.dart';
 import '../services/achievement_service.dart';
-import '../services/widget_service.dart';
+import '../services/persona_service.dart';
+import '../data/achievements_data.dart';
+import '../data/personas_data.dart';
 import 'settings_widgets.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -42,6 +48,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   String? _backupError;
   String _autoBackup = 'off';
   String _widgetPersona = 'hype';
+  bool _liveActivityEnabled = false;
+  bool _liveActivityAvailable = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -67,8 +75,11 @@ class _SettingsScreenState extends State<SettingsScreen>
       _autoBackup = StorageService.getString(StorageKeys.autoBackup) ?? 'off';
       _widgetPersona =
           StorageService.getString(StorageKeys.widgetPersona) ?? 'hype';
+      _liveActivityEnabled =
+          StorageService.getBool(StorageKeys.liveActivityEnabled) ?? false;
     });
     _loadBackupState();
+    _loadLiveActivityAvailability();
   }
 
   Future<void> _loadBackupState() async {
@@ -87,12 +98,39 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
+  Future<void> _loadLiveActivityAvailability() async {
+    final available = await LiveActivityService.isAvailable();
+    if (mounted) setState(() => _liveActivityAvailable = available);
+  }
+
+  Widget _buildLiveActivityRow() {
+    if (!_liveActivityAvailable) return const SizedBox.shrink();
+    return SettingsRow(
+      icon: Icons.lock_clock_outlined,
+      label: 'Lock-screen countdown',
+      subtitle: 'Android 14+ persistent notification',
+      trailing: Switch(
+        value: _liveActivityEnabled,
+        onChanged: (v) async {
+          if (v) {
+            final ok = await LiveActivityService.start();
+            if (ok) setState(() => _liveActivityEnabled = true);
+          } else {
+            await LiveActivityService.stop();
+            setState(() => _liveActivityEnabled = false);
+          }
+        },
+      ),
+    );
+  }
+
   Future<void> _editAiApiKey() async {
+    final theme = Theme.of(context);
     final controller = TextEditingController(text: _aiApiKey);
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('AI API Key'),
+        title: Text('AI API Key'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,17 +138,17 @@ class _SettingsScreenState extends State<SettingsScreen>
             Text(
               'Paste your Groq API key (starts with gsk_) from console.groq.com for unlimited scans. Leave empty to use the free built-in proxy (5 scans/day).',
               style: GoogleFonts.outfit(
-                  color: AppColors.textSecondary, fontSize: 13, height: 1.55),
+                  color: theme.colorScheme.onSurface.withAlpha(180), fontSize: 13, height: 1.55),
             ),
             const SizedBox(height: 14),
             TextField(
               controller: controller,
               obscureText: true,
               style:
-                  GoogleFonts.outfit(color: AppColors.textPrimary, fontSize: 13),
+                  GoogleFonts.outfit(color: theme.colorScheme.onSurface, fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'gsk_…',
-                hintStyle: GoogleFonts.outfit(color: AppColors.textTertiary),
+                hintStyle: GoogleFonts.outfit(color: theme.colorScheme.onSurface.withAlpha(120)),
               ),
             ),
           ],
@@ -119,11 +157,11 @@ class _SettingsScreenState extends State<SettingsScreen>
           TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text('Cancel',
-                  style: GoogleFonts.outfit(color: AppColors.textTertiary))),
+                  style: GoogleFonts.outfit(color: theme.colorScheme.onSurface.withAlpha(120)))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, controller.text.trim()),
               style:
-                  TextButton.styleFrom(foregroundColor: AppColors.primary),
+                  TextButton.styleFrom(foregroundColor: theme.colorScheme.primary),
               child: Text('Save',
                   style: GoogleFonts.outfit(fontWeight: FontWeight.w600))),
         ],
@@ -135,6 +173,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Future<void> _selectProfile() async {
+    final theme = Theme.of(context);
     final countryKey = _country.toLowerCase();
     final profiles = kSchoolProfiles
         .where((p) => p.country == countryKey)
@@ -150,7 +189,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -161,7 +200,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           Container(
             width: 40, height: 4,
             decoration: BoxDecoration(
-              color: AppColors.surfaceBorder,
+              color: theme.dividerTheme.color ?? AppColors.surfaceBorder,
               borderRadius: BorderRadius.circular(AppRadius.full),
             ),
           ),
@@ -172,7 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               'School Profile',
               style: GoogleFonts.outfit(
                 fontSize: 18, fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -200,11 +239,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                       horizontal: AppSpacing.md, vertical: 12),
                   decoration: BoxDecoration(
                     color: selected
-                        ? AppColors.primaryLight
+                        ? theme.colorScheme.primary.withAlpha(20)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: selected
-                        ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
+                        ? Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3))
                         : null,
                   ),
                   child: Row(
@@ -218,14 +257,14 @@ class _SettingsScreenState extends State<SettingsScreen>
                                 ? FontWeight.w600
                                 : FontWeight.w400,
                             color: selected
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
                       if (selected)
-                        const Icon(Icons.check_rounded,
-                            color: AppColors.primary, size: 18),
+                        Icon(Icons.check_rounded,
+                            color: theme.colorScheme.primary, size: 18),
                     ],
                   ),
                 ),
@@ -238,106 +277,18 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Future<void> _showPersonaPicker() async {
-    final options = [
-      ('hype', 'Hype', '🔥', 'LET\'S GO only 14 days!!!'),
-      ('chill', 'Chill', '😎', 'eh, 14 days'),
-      ('dramatic', 'Dramatic', '😭', 'I CANNOT 14 MORE DAYS'),
-      ('sarcastic', 'Sarcastic', '🙄', '14 days. Cool. Fine. Whatever.'),
-    ];
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceBorder,
-              borderRadius: BorderRadius.circular(AppRadius.full),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text('Widget Personality',
-                style: GoogleFonts.outfit(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary)),
-          ),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text('How the home screen widget talks to you',
-                style: GoogleFonts.outfit(
-                    fontSize: 12, color: AppColors.textTertiary)),
-          ),
-          const SizedBox(height: 8),
-          ...options.map((o) {
-            final selected = _widgetPersona == o.$1;
-            return InkWell(
-              onTap: () {
-                StorageService.saveString(StorageKeys.widgetPersona, o.$1);
-                setState(() => _widgetPersona = o.$1);
-                WidgetService.update();
-                Navigator.pop(ctx);
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg, vertical: 12),
-                child: Row(
-                  children: [
-                    Text(o.$3,
-                        style: const TextStyle(fontSize: 20)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(o.$2,
-                              style: GoogleFonts.outfit(
-                                fontSize: 15,
-                                fontWeight: selected
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                                color: selected
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
-                              )),
-                          Text('"${o.$4}"',
-                              style: GoogleFonts.outfit(
-                                  fontSize: 11,
-                                  color: AppColors.textTertiary,
-                                  fontStyle: FontStyle.italic)),
-                        ],
-                      ),
-                    ),
-                    if (selected)
-                      const Icon(Icons.check_rounded,
-                          color: AppColors.primary, size: 18),
-                  ],
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
+    await Navigator.pushNamed(context, Routes.personaPicker);
+    setState(() {
+      _widgetPersona = PersonaService.instance.current.id;
+    });
   }
-
   Future<void> _setAutoBackup(String value) async {
     await StorageService.saveString(StorageKeys.autoBackup, value);
     setState(() => _autoBackup = value);
   }
 
   Future<void> _showAutoBackupPicker() async {
+    final theme = Theme.of(context);
     final options = [
       ('off', 'Off', 'Manual backup only'),
       ('daily', 'Daily', 'Backs up once every 24 hours'),
@@ -347,7 +298,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -359,7 +310,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.surfaceBorder,
+              color: theme.dividerTheme.color ?? AppColors.surfaceBorder,
               borderRadius: BorderRadius.circular(AppRadius.full),
             ),
           ),
@@ -370,7 +321,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 style: GoogleFonts.outfit(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary)),
+                    color: theme.colorScheme.onSurface)),
           ),
           const SizedBox(height: 8),
           ...options.map((o) {
@@ -396,19 +347,19 @@ class _SettingsScreenState extends State<SettingsScreen>
                                     ? FontWeight.w600
                                     : FontWeight.w400,
                                 color: selected
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.onSurface,
                               )),
                           Text(o.$3,
                               style: GoogleFonts.outfit(
                                   fontSize: 12,
-                                  color: AppColors.textTertiary)),
+                                  color: theme.colorScheme.onSurface.withAlpha(120))),
                         ],
                       ),
                     ),
                     if (selected)
-                      const Icon(Icons.check_rounded,
-                          color: AppColors.primary, size: 18),
+                      Icon(Icons.check_rounded,
+                          color: theme.colorScheme.primary, size: 18),
                   ],
                 ),
               ),
@@ -438,20 +389,21 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Future<void> _clearAllData() async {
+    final theme = Theme.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear all data?'),
+        title: Text('Clear all data?'),
         content: Text(
           'This will delete your schedule, reminders, and cached school data.',
           style: GoogleFonts.outfit(
-              color: AppColors.textSecondary, height: 1.55),
+              color: theme.colorScheme.onSurface.withAlpha(180), height: 1.55),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text('Cancel',
-                style: GoogleFonts.outfit(color: AppColors.textTertiary)),
+                style: GoogleFonts.outfit(color: theme.colorScheme.onSurface.withAlpha(120))),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -475,14 +427,20 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: SafeArea(
+              // bottom: false — we handle bottom clearance ourselves below.
+              // SafeArea only knows about the system nav bar, not the
+              // floating LimelightNavBar (~84 px). Using bottom:true here
+              // would leave content hidden behind the custom nav bar.
+              bottom: false,
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
@@ -493,7 +451,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       style: GoogleFonts.outfit(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                         letterSpacing: -0.8,
                       ),
                     ),
@@ -511,7 +469,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             trailing: Text(
                               '${countryFlag(_country)} $_country',
                               style: GoogleFonts.outfit(
-                                  color: AppColors.textSecondary,
+                                  color: theme.colorScheme.onSurface.withAlpha(180),
                                   fontSize: 13),
                             ),
                             onTap: () async {
@@ -520,7 +478,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                               _load();
                             },
                           ),
-                          const SettingsRowDivider(),
+                          SettingsRowDivider(),
                           SettingsRow(
                             icon: Icons.school_outlined,
                             label: 'School Profile',
@@ -536,11 +494,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                                 return 'Not set';
                               }
                             }(),
-                            trailing: const Icon(Icons.chevron_right,
-                                color: AppColors.textTertiary, size: 20),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
                             onTap: _selectProfile,
                           ),
-                          const SettingsRowDivider(),
+                          SettingsRowDivider(),
                           SettingsRow(
                             icon: Icons.refresh_rounded,
                             label: 'Refresh School Data',
@@ -548,15 +506,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                                 ? 'Updated ${DateFormat('d MMM yyyy').format(_lastUpdated!)}'
                                 : 'Never updated',
                             trailing: _refreshing
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 16,
                                     height: 16,
                                     child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: AppColors.primary),
+                                        color: theme.colorScheme.primary),
                                   )
-                                : const Icon(Icons.chevron_right,
-                                    color: AppColors.textTertiary, size: 20),
+                                : Icon(Icons.chevron_right,
+                                    color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
                             onTap: _refreshData,
                           ),
                         ],
@@ -586,7 +544,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                               },
                             ),
                           ),
-                          const SettingsRowDivider(),
+                          SettingsRowDivider(),
                           SettingsRow(
                             icon: Icons.event_outlined,
                             label: 'Break Notifications',
@@ -611,14 +569,109 @@ class _SettingsScreenState extends State<SettingsScreen>
                               },
                             ),
                           ),
-                          const SettingsRowDivider(),
+                          SettingsRowDivider(),
                           SettingsRow(
                             icon: Icons.list_alt_outlined,
                             label: 'View Reminders',
-                            trailing: const Icon(Icons.chevron_right,
-                                color: AppColors.textTertiary, size: 20),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
                             onTap: () =>
                                 Navigator.pushNamed(context, Routes.reminders),
+                          ),
+                          SettingsRowDivider(),
+                          _buildLiveActivityRow(),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // ── Appearance ──────────────────────────────────────────
+                    SettingsSectionLabel('Appearance'),
+                    GlassmorphicCard(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.palette_outlined,
+                                  size: 18, color: theme.colorScheme.primary),
+                              const SizedBox(width: AppSpacing.sm),
+                              Text(
+                                'Theme',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              const Spacer(),
+                              ValueListenableBuilder<ThemePreset>(
+                                valueListenable: AppThemeController.notifier,
+                                builder: (ctx, current, _) => Text(
+                                  '${current.emoji} ${current.name}',
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      color: theme.colorScheme.onSurface.withAlpha(120)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          const ThemePickerGrid(),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // ── Vibe & Social ───────────────────────────────────────
+                    SettingsSectionLabel('Vibe & Social'),
+                    GlassmorphicCard(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        children: [
+                          SettingsRow(
+                            icon: Icons.sensors_rounded,
+                            label: 'Vibe Beacon',
+                            subtitle:
+                                'Show nearby students matching your persona (Bluetooth, opt-in)',
+                            trailing: Switch(
+                              value: StorageService.getBool(
+                                      StorageKeys.vibeBeaconEnabled) ??
+                                  false,
+                              onChanged: (v) async {
+                                await StorageService.saveBool(
+                                    StorageKeys.vibeBeaconEnabled, v);
+                                setState(() {});
+                              },
+                            ),
+                          ),
+                          SettingsRowDivider(),
+                          SettingsRow(
+                            icon: Icons.auto_awesome_rounded,
+                            label: 'AI Weekly Recap',
+                            subtitle: () {
+                              final hasKey = (StorageService.getString(
+                                          StorageKeys.groqApiKey) ??
+                                      '')
+                                  .isNotEmpty;
+                              if (!hasKey) {
+                                return 'Add a Groq key below to enable.';
+                              }
+                              return 'Sunday 19:00 notification, persona-tuned one-liner';
+                            }(),
+                            trailing: Switch(
+                              value: StorageService.getBool(
+                                      StorageKeys.personalizedRecapEnabled) ??
+                                  true,
+                              onChanged: (v) async {
+                                await StorageService.saveBool(
+                                    StorageKeys.personalizedRecapEnabled, v);
+                                setState(() {});
+                              },
+                            ),
                           ),
                         ],
                       ),
@@ -638,22 +691,23 @@ class _SettingsScreenState extends State<SettingsScreen>
                             subtitle: _aiApiKey.isEmpty
                                 ? 'Not set — needed for photo scan'
                                 : 'Key saved (${_aiApiKey.length} chars)',
-                            trailing: const Icon(Icons.chevron_right,
-                                color: AppColors.textTertiary, size: 20),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
                             onTap: _editAiApiKey,
                           ),
-                          const SettingsRowDivider(),
+                          SettingsRowDivider(),
                           SettingsRow(
                             icon: Icons.widgets_outlined,
-                            label: 'Widget Personality',
-                            subtitle: switch (_widgetPersona) {
-                              'chill' => 'Chill 😎',
-                              'dramatic' => 'Dramatic 😭',
-                              'sarcastic' => 'Sarcastic 🙄',
-                              _ => 'Hype 🔥',
-                            },
-                            trailing: const Icon(Icons.chevron_right,
-                                color: AppColors.textTertiary, size: 20),
+                            label: 'Persona',
+                            subtitle: () {
+                              final p = personaById(_widgetPersona);
+                              final total = kPersonas.length;
+                              final unlocked =
+                                  PersonaService.instance.unlockedPersonas.length;
+                              return '${p.name} ${p.emoji} · $unlocked / $total unlocked';
+                            }(),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
                             onTap: _showPersonaPicker,
                           ),
                         ],
@@ -672,22 +726,22 @@ class _SettingsScreenState extends State<SettingsScreen>
                             icon: Icons.bar_chart_rounded,
                             label: 'Statistics',
                             subtitle: 'School year progress & insights',
-                            trailing: const Icon(Icons.chevron_right,
-                                color: AppColors.textTertiary, size: 20),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
                             onTap: () =>
                                 Navigator.pushNamed(context, Routes.stats),
                           ),
-                          const SettingsRowDivider(),
+                          SettingsRowDivider(),
                           SettingsRow(
                             icon: Icons.emoji_events_rounded,
                             label: 'Achievements',
                             subtitle: () {
                               final count = AchievementService.allUnlocks.length;
-                              const total = 25;
+                              final total = kAchievements.length;
                               return '$count / $total unlocked';
                             }(),
-                            trailing: const Icon(Icons.chevron_right,
-                                color: AppColors.textTertiary, size: 20),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
                             onTap: () =>
                                 Navigator.pushNamed(context, Routes.achievements),
                           ),
@@ -711,11 +765,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                                     ? 'Last backup: ${DateFormat('d MMM yyyy').format(_lastBackupTime!)}'
                                     : _backupEmail ?? 'Signed in')
                                 : 'Not signed in',
-                            trailing: const Icon(Icons.chevron_right,
-                                color: AppColors.textTertiary, size: 20),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
                             onTap: _showBackupSheet,
                           ),
-                          const SettingsRowDivider(),
+                          SettingsRowDivider(),
                           SettingsRow(
                             icon: Icons.schedule_outlined,
                             label: 'Auto-backup',
@@ -725,8 +779,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                               'monthly' => 'Monthly',
                               _ => 'Off',
                             },
-                            trailing: const Icon(Icons.chevron_right,
-                                color: AppColors.textTertiary, size: 20),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
                             onTap: _showAutoBackupPicker,
                           ),
                         ],
@@ -743,8 +797,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                         icon: Icons.delete_outline,
                         label: 'Clear All Data',
                         labelColor: AppColors.error,
-                        trailing: const Icon(Icons.chevron_right,
-                            color: AppColors.textTertiary, size: 20),
+                        trailing: Icon(Icons.chevron_right,
+                            color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
                         onTap: _clearAllData,
                       ),
                     ),
@@ -761,20 +815,20 @@ class _SettingsScreenState extends State<SettingsScreen>
                             icon: Icons.code_rounded,
                             label: 'GitHub',
                             subtitle: 'View source & report issues',
-                            trailing: const Icon(Icons.open_in_new,
-                                color: AppColors.textTertiary, size: 18),
+                            trailing: Icon(Icons.open_in_new,
+                                color: theme.colorScheme.onSurface.withAlpha(120), size: 18),
                             onTap: () => launchUrl(
                               Uri.parse('https://github.com/xynnpg/breakcount'),
                               mode: LaunchMode.externalApplication,
                             ),
                           ),
-                          const SettingsRowDivider(),
+                          SettingsRowDivider(),
                           SettingsRow(
                             icon: Icons.coffee_rounded,
                             label: 'Buy Me a Coffee',
                             subtitle: 'Support BreakCount development',
-                            trailing: const Icon(Icons.open_in_new,
-                                color: AppColors.textTertiary, size: 18),
+                            trailing: Icon(Icons.open_in_new,
+                                color: theme.colorScheme.onSurface.withAlpha(120), size: 18),
                             onTap: () => launchUrl(
                               Uri.parse('https://buymeacoffee.com/xynnpg'),
                               mode: LaunchMode.externalApplication,
@@ -786,7 +840,14 @@ class _SettingsScreenState extends State<SettingsScreen>
 
                     const SizedBox(height: AppSpacing.xxl),
                     _buildAbout(),
-                    const SizedBox(height: 120),
+                    // Dynamic bottom clearance: LimelightNavBar height (64px)
+                    // + its vertical padding (8+12=20px) + system bottom inset.
+                    // This ensures content is never hidden behind the nav bar
+                    // regardless of device (notch phones, gesture nav, etc).
+                    SizedBox(
+                      height: 84 +
+                          MediaQuery.of(context).padding.bottom,
+                    ),
                   ],
                 ),
               ),
@@ -798,10 +859,11 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Future<void> _showBackupSheet() async {
+    final theme = Theme.of(context);
     setState(() => _backupError = null);
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -899,38 +961,49 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildAbout() {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              border: Border.all(color: AppColors.surfaceBorder),
-              color: Colors.white,
-              boxShadow: const [AppElevation.low],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.coffee_rounded,
-                    size: 12, color: AppColors.primary),
-                const SizedBox(width: 5),
-                Text(
-                  'BreakCount v2.0.1',
-                  style: GoogleFonts.outfit(
-                      color: AppColors.textTertiary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500),
-                ),
-              ],
+          InkWell(
+            onTap: () => Navigator.pushNamed(context, Routes.changelog),
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
+                color: Colors.white,
+                boxShadow: const [AppElevation.low],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.coffee_rounded,
+                      size: 12, color: theme.colorScheme.primary),
+                  const SizedBox(width: 5),
+                  FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (ctx, snap) {
+                      final version = snap.data?.version ?? '2.1.0';
+                      return Text(
+                        'BreakCount v$version',
+                        style: GoogleFonts.outfit(
+                            color: theme.colorScheme.onSurface.withAlpha(120),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             'School data: Bundled · OpenHolidays API',
             style: GoogleFonts.outfit(
-                color: AppColors.textTertiary, fontSize: 11),
+                color: theme.colorScheme.onSurface.withAlpha(120), fontSize: 11),
           ),
         ],
       ),

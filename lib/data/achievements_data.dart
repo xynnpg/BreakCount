@@ -2,7 +2,21 @@ import 'package:flutter/material.dart';
 
 enum AchievementRarity { bronze, silver, gold, platinum, secret }
 
-enum AchievementCategory { school, monday, exams, breaks, powerUser }
+enum AchievementCategory {
+  school,
+  monday,
+  exams,
+  breaks,
+  powerUser,
+  mood,
+  social,
+  study,
+  themes,
+  personas,
+  streaks,
+  seasonal,
+  appOpen,
+}
 
 class Achievement {
   final String id;
@@ -13,6 +27,9 @@ class Achievement {
   final AchievementCategory category;
   // For count-based achievements: goal > 0, progress tracked separately.
   final int goal;
+  // XP awarded on unlock. If 0, falls back to the rarity default
+  // (AchievementRarity.xpDefault).
+  final int xp;
 
   const Achievement({
     required this.id,
@@ -22,10 +39,15 @@ class Achievement {
     required this.rarity,
     required this.category,
     this.goal = 0,
+    this.xp = 0,
   });
 
   bool get isSecret => rarity == AchievementRarity.secret;
   bool get isCountBased => goal > 0;
+
+  /// XP this achievement awards — honoring an explicit [xp] override or
+  /// defaulting to the rarity tier.
+  int get effectiveXp => xp > 0 ? xp : rarity.xpDefault;
 }
 
 const List<Achievement> kAchievements = [
@@ -245,6 +267,657 @@ const List<Achievement> kAchievements = [
     rarity: AchievementRarity.gold,
     category: AchievementCategory.powerUser,
   ),
+
+  // ── Mood Streaks ─────────────────────────────────────────────────────────
+  Achievement(
+    id: 'on_fire_7',
+    name: 'On Fire 🔥',
+    description: '7 consecutive days hyped about the next break.',
+    icon: Icons.local_fire_department_rounded,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.mood,
+    goal: 7,
+  ),
+  Achievement(
+    id: 'on_fire_30',
+    name: 'Blazing',
+    description: '30 consecutive 🔥 days. You feel it.',
+    icon: Icons.whatshot_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.mood,
+    goal: 30,
+  ),
+  Achievement(
+    id: 'on_fire_100',
+    name: 'Eternal Flame',
+    description: '100 consecutive 🔥 days. Unstoppable.',
+    icon: Icons.auto_awesome_rounded,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.mood,
+    goal: 100,
+  ),
+  Achievement(
+    id: 'hell_week',
+    name: 'Survived Hell Week',
+    description: '???',
+    icon: Icons.warning_amber_rounded,
+    rarity: AchievementRarity.secret,
+    category: AchievementCategory.mood,
+  ),
+  Achievement(
+    id: 'mood_rollercoaster',
+    name: 'Mood Rollercoaster',
+    description: 'Hit every mood in a single week. What a ride.',
+    icon: Icons.waves_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.mood,
+  ),
+
+  // ── Social (mesh bump) ───────────────────────────────────────────────────
+  Achievement(
+    id: 'first_meet',
+    name: 'First Meet',
+    description: 'Bumped schedules with another student nearby.',
+    icon: Icons.handshake_rounded,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.social,
+  ),
+  Achievement(
+    id: 'social_butterfly',
+    name: 'Social Butterfly',
+    description: 'Met 3 different students via bump.',
+    icon: Icons.groups_rounded,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.social,
+    goal: 3,
+  ),
+  Achievement(
+    id: 'networker',
+    name: 'Networker',
+    description: 'Met 10 unique students. A real connector.',
+    icon: Icons.hub_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.social,
+    goal: 10,
+  ),
+  Achievement(
+    id: 'met_the_pack',
+    name: 'Met the Pack',
+    description: 'Met at least one student of every base persona.',
+    icon: Icons.diversity_3_rounded,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.social,
+  ),
+  Achievement(
+    id: 'mirror',
+    name: 'Mirror',
+    description: '???',
+    icon: Icons.contrast_rounded,
+    rarity: AchievementRarity.secret,
+    category: AchievementCategory.social,
+  ),
+  Achievement(
+    id: 'opposites_attract',
+    name: 'Opposites Attract',
+    description: '???',
+    icon: Icons.compare_arrows_rounded,
+    rarity: AchievementRarity.secret,
+    category: AchievementCategory.social,
+  ),
+
+  // ── Echo / Mentor (donor-side bumps) ─────────────────────────────────────
+  Achievement(
+    id: 'echo',
+    name: 'Echo',
+    description: 'Someone copied your schedule via bump.',
+    icon: Icons.graphic_eq_rounded,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.social,
+  ),
+  Achievement(
+    id: 'mentor',
+    name: 'Mentor',
+    description: 'Your schedule has been copied by 3 students.',
+    icon: Icons.school_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.social,
+    goal: 3,
+  ),
+  Achievement(
+    id: 'teacher',
+    name: 'Teacher',
+    description: 'Your schedule has been copied by 10 students.',
+    icon: Icons.cast_for_education_rounded,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.social,
+    goal: 10,
+  ),
+
+  // ── Flex (shared Vibe Card) ──────────────────────────────────────────────
+  Achievement(
+    id: 'flex',
+    name: 'Flex',
+    description: 'Shared your Vibe Card. Confidence level: on display.',
+    icon: Icons.share_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.social,
+  ),
+
+  // ── Weekly Recap ─────────────────────────────────────────────────────────
+  Achievement(
+    id: 'recap_regular',
+    name: 'Recap Regular',
+    description: 'Read 5 weekly vibe recaps.',
+    icon: Icons.calendar_today_rounded,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.mood,
+    goal: 5,
+  ),
+  Achievement(
+    id: 'recap_master',
+    name: 'Recap Master',
+    description: 'Read 20 weekly vibe recaps.',
+    icon: Icons.auto_stories_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.mood,
+    goal: 20,
+  ),
+  Achievement(
+    id: 'recap_streaker',
+    name: 'Recap Streaker',
+    description: '10 consecutive weeks, no recap skipped.',
+    icon: Icons.bolt_rounded,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.mood,
+    goal: 10,
+  ),
+
+  // ── Streaks (v2.1.0) ─────────────────────────────────────────────────────
+  Achievement(
+    id: 'streak_3',
+    name: '3-Day Streak',
+    description: 'Opened BreakCount 3 days in a row.',
+    icon: Icons.local_fire_department_outlined,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.streaks,
+    goal: 3,
+  ),
+  Achievement(
+    id: 'streak_7',
+    name: 'Week Lock-in',
+    description: 'Seven days in a row. Consistent energy.',
+    icon: Icons.local_fire_department_rounded,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.streaks,
+    goal: 7,
+  ),
+  Achievement(
+    id: 'streak_14',
+    name: 'Fortnight',
+    description: 'Fourteen consecutive days.',
+    icon: Icons.whatshot_outlined,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.streaks,
+    goal: 14,
+  ),
+  Achievement(
+    id: 'streak_30',
+    name: 'Monthly Regular',
+    description: 'Thirty days straight. Building a habit.',
+    icon: Icons.calendar_month_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.streaks,
+    goal: 30,
+  ),
+  Achievement(
+    id: 'streak_50',
+    name: 'Half-Century Streak',
+    description: 'Fifty days, uninterrupted.',
+    icon: Icons.star_half_rounded,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.streaks,
+    goal: 50,
+  ),
+  Achievement(
+    id: 'streak_75',
+    name: 'Seventy-Five Strong',
+    description: 'Seventy-five consecutive days.',
+    icon: Icons.electric_bolt_rounded,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.streaks,
+    goal: 75,
+  ),
+  Achievement(
+    id: 'streak_100',
+    name: 'Centurion',
+    description: 'Hundred days in a row. Legend status.',
+    icon: Icons.emoji_events_outlined,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.streaks,
+    goal: 100,
+  ),
+  Achievement(
+    id: 'streak_150',
+    name: 'Iron Discipline',
+    description: 'A hundred and fifty days straight.',
+    icon: Icons.shield_rounded,
+    rarity: AchievementRarity.platinum,
+    category: AchievementCategory.streaks,
+    goal: 150,
+  ),
+  Achievement(
+    id: 'streak_200',
+    name: 'Two Hundred Days',
+    description: 'Two hundred days. Untouchable.',
+    icon: Icons.trending_up_rounded,
+    rarity: AchievementRarity.platinum,
+    category: AchievementCategory.streaks,
+    goal: 200,
+  ),
+  Achievement(
+    id: 'streak_365',
+    name: 'Year-Round',
+    description: 'A full year without breaking the streak.',
+    icon: Icons.stars_rounded,
+    rarity: AchievementRarity.platinum,
+    category: AchievementCategory.streaks,
+    goal: 365,
+  ),
+
+  // ── App-Open milestones (total unique days) ──────────────────────────────
+  Achievement(
+    id: 'app_open_5',
+    name: 'Five Visits',
+    description: 'Opened BreakCount on 5 different days.',
+    icon: Icons.visibility_outlined,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.appOpen,
+    goal: 5,
+  ),
+  Achievement(
+    id: 'app_open_10',
+    name: 'Regular',
+    description: '10 unique-day visits.',
+    icon: Icons.looks_one_outlined,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.appOpen,
+    goal: 10,
+  ),
+  Achievement(
+    id: 'app_open_25',
+    name: 'Frequenter',
+    description: '25 unique-day visits.',
+    icon: Icons.event_repeat_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.appOpen,
+    goal: 25,
+  ),
+  Achievement(
+    id: 'app_open_50',
+    name: 'Ritual',
+    description: '50 unique-day visits.',
+    icon: Icons.replay_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.appOpen,
+    goal: 50,
+  ),
+  Achievement(
+    id: 'app_open_100',
+    name: 'Centennial Visits',
+    description: '100 unique-day visits.',
+    icon: Icons.workspace_premium_outlined,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.appOpen,
+    goal: 100,
+  ),
+  Achievement(
+    id: 'app_open_365',
+    name: 'Every Day for a Year',
+    description: '365 unique-day visits.',
+    icon: Icons.auto_awesome_motion_rounded,
+    rarity: AchievementRarity.platinum,
+    category: AchievementCategory.appOpen,
+    goal: 365,
+  ),
+
+  // ── Theme collector ──────────────────────────────────────────────────────
+  Achievement(
+    id: 'theme_explorer',
+    name: 'Theme Explorer',
+    description: 'Unlocked 3 themes.',
+    icon: Icons.palette_outlined,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.themes,
+    goal: 3,
+  ),
+  Achievement(
+    id: 'theme_collector',
+    name: 'Theme Collector',
+    description: 'Unlocked 6 themes.',
+    icon: Icons.palette_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.themes,
+    goal: 6,
+  ),
+  Achievement(
+    id: 'theme_curator',
+    name: 'Theme Curator',
+    description: 'Unlocked 10 themes.',
+    icon: Icons.auto_fix_high_rounded,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.themes,
+    goal: 10,
+  ),
+  Achievement(
+    id: 'theme_master',
+    name: 'Theme Master',
+    description: 'Unlocked every theme in the app.',
+    icon: Icons.format_color_fill_rounded,
+    rarity: AchievementRarity.platinum,
+    category: AchievementCategory.themes,
+  ),
+
+  // ── Persona collector ────────────────────────────────────────────────────
+  Achievement(
+    id: 'persona_five',
+    name: 'Five Personas',
+    description: 'Unlocked 5 personas.',
+    icon: Icons.face_rounded,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.personas,
+    goal: 5,
+  ),
+  Achievement(
+    id: 'persona_fifteen',
+    name: 'Persona Hunter',
+    description: 'Unlocked 15 personas.',
+    icon: Icons.groups_outlined,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.personas,
+    goal: 15,
+  ),
+  Achievement(
+    id: 'persona_all',
+    name: 'Every Vibe',
+    description: 'Unlocked all 30 personas.',
+    icon: Icons.diversity_1_rounded,
+    rarity: AchievementRarity.platinum,
+    category: AchievementCategory.personas,
+  ),
+
+  // ── Achievement Hunter (total-unlock ladder) ─────────────────────────────
+  Achievement(
+    id: 'achievement_hunter_10',
+    name: 'Getting Started',
+    description: 'Unlocked 10 achievements.',
+    icon: Icons.check_circle_outlined,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.powerUser,
+    goal: 10,
+  ),
+  Achievement(
+    id: 'achievement_hunter_25',
+    name: 'Collector',
+    description: 'Unlocked 25 achievements.',
+    icon: Icons.inventory_2_outlined,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.powerUser,
+    goal: 25,
+  ),
+  Achievement(
+    id: 'achievement_hunter_50',
+    name: 'Completionist',
+    description: 'Unlocked 50 achievements.',
+    icon: Icons.grade_rounded,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.powerUser,
+    goal: 50,
+  ),
+  Achievement(
+    id: 'achievement_hunter_75',
+    name: 'Relentless',
+    description: 'Unlocked 75 achievements.',
+    icon: Icons.rocket_launch_rounded,
+    rarity: AchievementRarity.platinum,
+    category: AchievementCategory.powerUser,
+    goal: 75,
+  ),
+  Achievement(
+    id: 'achievement_hunter_100',
+    name: 'Beyond',
+    description: '100 achievements unlocked. What else is there?',
+    icon: Icons.auto_awesome_rounded,
+    rarity: AchievementRarity.platinum,
+    category: AchievementCategory.powerUser,
+    goal: 100,
+  ),
+
+  // ── Seasonal (per-break) ─────────────────────────────────────────────────
+  Achievement(
+    id: 'survived_autumn',
+    name: 'Autumn Survivor',
+    description: 'Reached the autumn / October break.',
+    icon: Icons.park_outlined,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.seasonal,
+  ),
+  Achievement(
+    id: 'survived_winter',
+    name: 'Winter Survivor',
+    description: 'Reached the winter / Christmas break.',
+    icon: Icons.ac_unit_rounded,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.seasonal,
+  ),
+  Achievement(
+    id: 'survived_spring',
+    name: 'Spring Survivor',
+    description: 'Reached the spring / Easter break.',
+    icon: Icons.local_florist_outlined,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.seasonal,
+  ),
+  Achievement(
+    id: 'survived_summer',
+    name: 'Summer Survivor',
+    description: 'Reached the summer break.',
+    icon: Icons.beach_access_rounded,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.seasonal,
+  ),
+  Achievement(
+    id: 'all_seasonal_breaks',
+    name: 'All Four Seasons',
+    description: 'Reached every seasonal break in one year.',
+    icon: Icons.recycling_rounded,
+    rarity: AchievementRarity.platinum,
+    category: AchievementCategory.seasonal,
+  ),
+  Achievement(
+    id: 'break_reveal_10',
+    name: 'Ten Break Reveals',
+    description: 'Witnessed 10 break-reveal animations.',
+    icon: Icons.celebration_outlined,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.seasonal,
+    goal: 10,
+  ),
+
+  // ── Study sessions ───────────────────────────────────────────────────────
+  Achievement(
+    id: 'first_study',
+    name: 'First Study Log',
+    description: 'Logged your first study session.',
+    icon: Icons.menu_book_outlined,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.study,
+  ),
+  Achievement(
+    id: 'study_10',
+    name: 'Committed',
+    description: 'Logged 10 study sessions.',
+    icon: Icons.self_improvement_rounded,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.study,
+    goal: 10,
+  ),
+  Achievement(
+    id: 'study_50',
+    name: 'Focused',
+    description: 'Logged 50 study sessions.',
+    icon: Icons.school_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.study,
+    goal: 50,
+  ),
+  Achievement(
+    id: 'study_100',
+    name: 'Scholar',
+    description: 'Logged 100 study sessions.',
+    icon: Icons.psychology_outlined,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.study,
+    goal: 100,
+  ),
+  Achievement(
+    id: 'study_week_10h',
+    name: 'Ten-Hour Week',
+    description: 'Logged 10+ hours of study in a single week.',
+    icon: Icons.access_time_filled_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.study,
+  ),
+  Achievement(
+    id: 'study_marathon',
+    name: 'Marathon Runner',
+    description: 'Logged a single study session of 3+ hours.',
+    icon: Icons.directions_run_outlined,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.study,
+  ),
+
+  // ── Daily quests ─────────────────────────────────────────────────────────
+  Achievement(
+    id: 'quest_first',
+    name: 'First Quest',
+    description: 'Completed your first daily quest.',
+    icon: Icons.explore_outlined,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.powerUser,
+  ),
+  Achievement(
+    id: 'quest_10',
+    name: 'Questmonger',
+    description: 'Completed 10 daily quests.',
+    icon: Icons.task_alt_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.powerUser,
+    goal: 10,
+  ),
+  Achievement(
+    id: 'quest_50',
+    name: 'Quest Veteran',
+    description: 'Completed 50 daily quests.',
+    icon: Icons.military_tech_outlined,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.powerUser,
+    goal: 50,
+  ),
+  Achievement(
+    id: 'quest_triple',
+    name: 'Triple Threat',
+    description: 'Completed all 3 daily quests in one day.',
+    icon: Icons.bolt_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.powerUser,
+  ),
+
+  // ── XP / Level ───────────────────────────────────────────────────────────
+  Achievement(
+    id: 'level_5',
+    name: 'Master Tier',
+    description: 'Reached Level 5 — Master.',
+    icon: Icons.workspace_premium_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.powerUser,
+  ),
+  Achievement(
+    id: 'level_7',
+    name: 'Mythic Tier',
+    description: 'Reached Level 7 — Mythic.',
+    icon: Icons.diamond_outlined,
+    rarity: AchievementRarity.gold,
+    category: AchievementCategory.powerUser,
+  ),
+  Achievement(
+    id: 'level_10',
+    name: 'Eternal',
+    description: 'Reached Level 10 — Eternal. The final name.',
+    icon: Icons.all_inclusive_rounded,
+    rarity: AchievementRarity.platinum,
+    category: AchievementCategory.powerUser,
+  ),
+
+  // ── Social extensions ────────────────────────────────────────────────────
+  Achievement(
+    id: 'first_compare',
+    name: 'Side by Side',
+    description: 'Compared achievements with another student nearby.',
+    icon: Icons.compare_rounded,
+    rarity: AchievementRarity.bronze,
+    category: AchievementCategory.social,
+  ),
+  Achievement(
+    id: 'compare_5',
+    name: 'Benchmarker',
+    description: 'Compared with 5 different students.',
+    icon: Icons.insights_rounded,
+    rarity: AchievementRarity.silver,
+    category: AchievementCategory.social,
+    goal: 5,
+  ),
+
+  // ── Hidden (secret) ──────────────────────────────────────────────────────
+  Achievement(
+    id: 'secret_birthday',
+    name: 'Birthday Honors',
+    description: '???',
+    icon: Icons.cake_rounded,
+    rarity: AchievementRarity.secret,
+    category: AchievementCategory.powerUser,
+  ),
+  Achievement(
+    id: 'secret_new_year',
+    name: 'New Year, New Me',
+    description: '???',
+    icon: Icons.celebration_rounded,
+    rarity: AchievementRarity.secret,
+    category: AchievementCategory.powerUser,
+  ),
+  Achievement(
+    id: 'secret_exact_break',
+    name: 'Perfect Timing',
+    description: '???',
+    icon: Icons.hourglass_top_rounded,
+    rarity: AchievementRarity.secret,
+    category: AchievementCategory.powerUser,
+  ),
+  Achievement(
+    id: 'secret_leap_day',
+    name: 'Leap Day',
+    description: '???',
+    icon: Icons.date_range_rounded,
+    rarity: AchievementRarity.secret,
+    category: AchievementCategory.powerUser,
+  ),
+  Achievement(
+    id: 'secret_midnight_exam',
+    name: 'Witching Hour',
+    description: '???',
+    icon: Icons.access_time_rounded,
+    rarity: AchievementRarity.secret,
+    category: AchievementCategory.powerUser,
+  ),
 ];
 
 extension AchievementRarityLabel on AchievementRarity {
@@ -275,6 +948,72 @@ extension AchievementRarityLabel on AchievementRarity {
         return const Color(0xFF4FC3F7);
       case AchievementRarity.secret:
         return const Color(0xFFA89888);
+    }
+  }
+
+  /// Default XP awarded for this rarity when an achievement doesn't override.
+  int get xpDefault {
+    switch (this) {
+      case AchievementRarity.bronze:
+        return 25;
+      case AchievementRarity.silver:
+        return 75;
+      case AchievementRarity.gold:
+        return 200;
+      case AchievementRarity.platinum:
+        return 500;
+      case AchievementRarity.secret:
+        return 750;
+    }
+  }
+
+  /// Sort priority — used to order the rarity grid (Platinum → Gold →
+  /// Silver → Bronze → Secret).
+  int get sortOrder {
+    switch (this) {
+      case AchievementRarity.platinum:
+        return 0;
+      case AchievementRarity.gold:
+        return 1;
+      case AchievementRarity.silver:
+        return 2;
+      case AchievementRarity.bronze:
+        return 3;
+      case AchievementRarity.secret:
+        return 4;
+    }
+  }
+}
+
+extension AchievementCategoryLabel on AchievementCategory {
+  String get label {
+    switch (this) {
+      case AchievementCategory.school:
+        return 'School';
+      case AchievementCategory.monday:
+        return 'Mondays';
+      case AchievementCategory.exams:
+        return 'Exams';
+      case AchievementCategory.breaks:
+        return 'Breaks';
+      case AchievementCategory.powerUser:
+        return 'Power User';
+      case AchievementCategory.mood:
+        return 'Mood';
+      case AchievementCategory.social:
+        return 'Social';
+      case AchievementCategory.study:
+        return 'Study';
+      case AchievementCategory.themes:
+        return 'Themes';
+      case AchievementCategory.personas:
+        return 'Personas';
+      case AchievementCategory.streaks:
+        return 'Streaks';
+      case AchievementCategory.seasonal:
+        return 'Seasonal';
+      case AchievementCategory.appOpen:
+        return 'App Opens';
     }
   }
 }

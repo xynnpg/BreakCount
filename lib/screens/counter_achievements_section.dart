@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../app/constants.dart';
 import '../data/achievements_data.dart';
+import '../data/persona_copy.dart';
 import '../services/achievement_service.dart';
+import '../services/storage_service.dart';
 import '../widgets/glassmorphic_card.dart';
 
 class CounterAchievementsSection extends StatelessWidget {
@@ -27,32 +29,33 @@ class CounterAchievementsSection extends StatelessWidget {
         children: [
           _buildHeader(context, rank),
           const SizedBox(height: AppSpacing.sm),
-          _buildProgress(count, total),
+          _buildProgress(context, count, total),
           const SizedBox(height: AppSpacing.md),
-          count == 0 ? _buildEmpty() : _buildRecentIcons(recentThree),
+          count == 0 ? _buildEmpty(context) : _buildRecentIcons(context, recentThree),
         ],
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context, String rank) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.sm, vertical: 4),
           decoration: BoxDecoration(
-            color: AppColors.primaryLight,
+            color: theme.colorScheme.primary.withAlpha(20),
             borderRadius: BorderRadius.circular(AppRadius.full),
             border: Border.all(
-                color: AppColors.primary.withAlpha(40), width: 1),
+                color: theme.colorScheme.primary.withAlpha(40), width: 1),
           ),
           child: Text(
             rank.toUpperCase(),
             style: GoogleFonts.outfit(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: AppColors.primary,
+              color: theme.colorScheme.primary,
               letterSpacing: 1.2,
             ),
           ),
@@ -63,7 +66,7 @@ class CounterAchievementsSection extends StatelessWidget {
           style: GoogleFonts.outfit(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const Spacer(),
@@ -76,12 +79,12 @@ class CounterAchievementsSection extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.primary,
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(width: 2),
-              const Icon(Icons.arrow_forward_ios_rounded,
-                  size: 11, color: AppColors.primary),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  size: 11, color: theme.colorScheme.primary),
             ],
           ),
         ),
@@ -89,7 +92,8 @@ class CounterAchievementsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildProgress(int count, int total) {
+  Widget _buildProgress(BuildContext context, int count, int total) {
+    final theme = Theme.of(context);
     final progress = total > 0 ? count / total : 0.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +103,7 @@ class CounterAchievementsSection extends StatelessWidget {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 6,
-            backgroundColor: AppColors.surfaceBorder,
+            backgroundColor: Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder,
             valueColor:
                 const AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
@@ -109,25 +113,31 @@ class CounterAchievementsSection extends StatelessWidget {
           '$count / $total unlocked',
           style: GoogleFonts.outfit(
             fontSize: 11,
-            color: AppColors.textSecondary,
+            color: theme.colorScheme.onSurface.withAlpha(180),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(BuildContext context) {
+    final theme = Theme.of(context);
+    final personaId =
+        StorageService.getString(StorageKeys.widgetPersona) ?? 'hype';
+    final text = PersonaCopy.get(personaId, 'empty_achievements',
+        fallback: 'No achievements yet — keep going!');
     return Text(
-      'No achievements yet — keep going!',
+      text,
       style: GoogleFonts.outfit(
         fontSize: 12,
-        color: AppColors.textTertiary,
+        color: theme.colorScheme.onSurface.withAlpha(120),
         fontStyle: FontStyle.italic,
       ),
     );
   }
 
-  Widget _buildRecentIcons(List<AchievementUnlock> recent) {
+  Widget _buildRecentIcons(BuildContext context, List<AchievementUnlock> recent) {
+    final theme = Theme.of(context);
     return Row(
       children: recent.map((u) {
         final ach = _findAchievement(u.id);
@@ -157,7 +167,7 @@ class CounterAchievementsSection extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.outfit(
                     fontSize: 10,
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurface.withAlpha(180),
                   ),
                 ),
               ),

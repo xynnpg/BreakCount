@@ -15,8 +15,10 @@ class SchoolBreak {
 
   bool get isActive {
     final now = DateTime.now();
-    return now.isAfter(startDate.subtract(const Duration(days: 1))) &&
-        now.isBefore(endDate.add(const Duration(days: 1)));
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final end = DateTime(endDate.year, endDate.month, endDate.day);
+    return !today.isBefore(start) && !today.isAfter(end);
   }
 
   bool get isPast => DateTime.now().isAfter(endDate);

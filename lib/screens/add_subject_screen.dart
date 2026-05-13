@@ -116,19 +116,20 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final country =
         StorageService.getString(StorageKeys.selectedCountry) ?? '';
     final suggestions = getSuggestionsForCountry(country);
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Form(
         key: _formKey,
         child: CustomScrollView(
           slivers: [
             SliverAppBar(
               pinned: true,
-              backgroundColor: Colors.white,
+              backgroundColor: theme.colorScheme.surface,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
               scrolledUnderElevation: 1,
@@ -137,7 +138,7 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               actions: [
@@ -146,16 +147,16 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
                   child: TextButton(
                     onPressed: _saving ? null : _save,
                     child: _saving
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: AppColors.primary),
+                                strokeWidth: 2, color: theme.colorScheme.primary),
                           )
                         : Text(
                             'Save',
                             style: GoogleFonts.outfit(
-                              color: AppColors.primary,
+                              color: theme.colorScheme.primary,
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
                             ),
@@ -192,16 +193,17 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
   }
 
   Widget _buildNameField(List<String> suggestions) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextFormField(
           controller: _nameController,
-          style: GoogleFonts.outfit(color: AppColors.textPrimary),
-          decoration: const InputDecoration(
+          style: GoogleFonts.outfit(color: theme.colorScheme.onSurface),
+          decoration: InputDecoration(
             labelText: 'Subject name',
             prefixIcon:
-                Icon(Icons.book_outlined, color: AppColors.textTertiary),
+                Icon(Icons.book_outlined, color: theme.colorScheme.onSurface.withAlpha(140)),
           ),
           validator: (v) =>
               v == null || v.trim().isEmpty ? 'Name is required' : null,
@@ -218,10 +220,10 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
               label: Text(
                 suggestions[i],
                 style: GoogleFonts.outfit(
-                    fontSize: 12, color: AppColors.textSecondary),
+                    fontSize: 12, color: theme.colorScheme.onSurface.withAlpha(200)),
               ),
-              backgroundColor: Colors.white,
-              side: const BorderSide(color: AppColors.surfaceBorder),
+              backgroundColor: theme.colorScheme.surface,
+              side: BorderSide(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
               padding:
                   const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
               onPressed: () =>
@@ -234,6 +236,7 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
   }
 
   Widget _buildColorPicker() {
+    final theme = Theme.of(context);
     return GlassmorphicCard(
       animate: false,
       child: Column(
@@ -241,7 +244,7 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
         children: [
           Text('Color',
               style: GoogleFonts.outfit(
-                  color: AppColors.textSecondary,
+                  color: theme.colorScheme.onSurface.withAlpha(200),
                   fontSize: 13,
                   fontWeight: FontWeight.w500)),
           const SizedBox(height: AppSpacing.md),
@@ -260,7 +263,7 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
                     color: Color(c),
                     shape: BoxShape.circle,
                     border: selected
-                        ? Border.all(color: Colors.white, width: 2.5)
+                        ? Border.all(color: theme.colorScheme.surface, width: 2.5)
                         : Border.all(
                             color: Color(c).withAlpha(0), width: 0),
                     boxShadow: selected
@@ -283,17 +286,19 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
 
   Widget _buildTextField(
       TextEditingController ctrl, String label, IconData icon) {
+    final theme = Theme.of(context);
     return TextFormField(
       controller: ctrl,
-      style: GoogleFonts.outfit(color: AppColors.textPrimary),
+      style: GoogleFonts.outfit(color: theme.colorScheme.onSurface),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: AppColors.textTertiary),
+        prefixIcon: Icon(icon, color: theme.colorScheme.onSurface.withAlpha(140)),
       ),
     );
   }
 
   Widget _buildScheduleSection() {
+    final theme = Theme.of(context);
     return GlassmorphicCard(
       animate: false,
       child: Column(
@@ -301,7 +306,7 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
         children: [
           Text('Schedule',
               style: GoogleFonts.outfit(
-                  color: AppColors.textSecondary,
+                  color: theme.colorScheme.onSurface.withAlpha(200),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5)),
@@ -323,13 +328,13 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
                         horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
                       color: selected
-                          ? AppColors.primaryLight
-                          : Colors.white,
+                          ? theme.colorScheme.primary.withAlpha(20)
+                          : theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(AppRadius.full),
                       border: Border.all(
                         color: selected
-                            ? AppColors.primary
-                            : AppColors.surfaceBorder,
+                            ? theme.colorScheme.primary
+                            : theme.dividerTheme.color ?? AppColors.surfaceBorder,
                       ),
                     ),
                     child: Text(
@@ -337,8 +342,8 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
                       style: GoogleFonts.outfit(
                         fontSize: 12,
                         color: selected
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface.withAlpha(200),
                         fontWeight: selected
                             ? FontWeight.w600
                             : FontWeight.w400,
@@ -374,17 +379,17 @@ class _AddSubjectScreenState extends State<AddSubjectScreen> {
           // Week type
           DropdownButtonFormField<WeekType>(
             initialValue: _weekType,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Week',
               prefixIcon: Icon(Icons.repeat_rounded,
-                  color: AppColors.textTertiary),
+                  color: theme.colorScheme.onSurface.withAlpha(140)),
             ),
             items: WeekType.values
                 .map((w) => DropdownMenuItem(
                       value: w,
                       child: Text(w.label,
                           style: GoogleFonts.outfit(
-                              color: AppColors.textPrimary)),
+                              color: theme.colorScheme.onSurface)),
                     ))
                 .toList(),
             onChanged: (v) => setState(() => _weekType = v!),
@@ -405,28 +410,29 @@ class _TimeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.surfaceBorder),
+          border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
                 style: GoogleFonts.outfit(
-                    fontSize: 11, color: AppColors.textTertiary)),
+                    fontSize: 11, color: theme.colorScheme.onSurface.withAlpha(140))),
             Text(
               time.format24h(),
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ],

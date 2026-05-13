@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../app/constants.dart';
 
 /// Previously a dark animated gradient background.
 /// Now simply provides a clean `#F8FAFC` scaffold background.
@@ -12,7 +11,7 @@ class AnimatedGradientBg extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.scaffoldBg,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: child,
     );
   }

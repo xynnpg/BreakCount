@@ -70,3 +70,30 @@ workers/**/node_modules/
 # Firebase config — contains project credentials
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
+
+# Temp / scratch files
+temptext.txt
+*.tmp
+*.bak
+*.orig
+
+# Build intermediates (large generated files)
+*.dill
+*.dill.track.dill
+snapshot_blob.bin.d
+
+# Test coverage output
+coverage/
+lcov.info
+
+# AI tool leftovers
+.aider*
+.continue/
+.cursor/
+*.ai-context
+
+# Local dev config (machine-specific)
+devtools_options.yaml
+
+# Screenshots / promo assets (keep logo.png, ignore screenshots)
+pics/Screenshot_*

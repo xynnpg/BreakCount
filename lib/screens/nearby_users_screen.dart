@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../app/constants.dart';
+import '../app/persona_theme_ext.dart';
 import '../models/nearby_device.dart';
 import '../services/mesh_service.dart';
 import '../widgets/glassmorphic_card.dart';
@@ -25,6 +26,7 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
   bool _timedOut = false;
   StreamSubscription<List<NearbyDevice>>? _devicesSub;
   StreamSubscription<ReceivedSchedule>? _receivedSub;
+  StreamSubscription<ReceivedPersona>? _personaSub;
 
   @override
   void initState() {
@@ -41,6 +43,7 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
     _radarCtrl.dispose();
     _devicesSub?.cancel();
     _receivedSub?.cancel();
+    _personaSub?.cancel();
     MeshService.instance.stop();
     super.dispose();
   }
@@ -82,6 +85,19 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
         ),
       );
     });
+    _personaSub = MeshService.instance.personaReceivedStream.listen((p) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${p.fromDisplayName} shared their persona ${p.personaEmoji} ${p.personaName}',
+            style: GoogleFonts.outfit(),
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
     if (mounted) setState(() => _scanning = false);
   }
 
@@ -95,14 +111,15 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.scaffoldBg,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: AppColors.textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios_rounded,
+              color: theme.colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -113,14 +130,14 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
               style: GoogleFonts.outfit(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             Text(
               _subtitle,
               style: GoogleFonts.outfit(
                 fontSize: 11,
-                color: AppColors.textTertiary,
+                color: theme.colorScheme.onSurface.withAlpha(120),
               ),
             ),
           ],
@@ -164,6 +181,7 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
   }
 
   Widget _buildRadarSection() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
       child: Column(
@@ -172,7 +190,10 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
             child: AnimatedBuilder(
               animation: _radarCtrl,
               builder: (context, child) => CustomPaint(
-                painter: RadarPainter(progress: _radarCtrl.value),
+                painter: RadarPainter(
+                  progress: _radarCtrl.value,
+                  color: context.personaTint,
+                ),
                 size: const Size(120, 120),
               ),
             ),
@@ -182,7 +203,7 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
             _scanning ? 'Scanning...' : _subtitle,
             style: GoogleFonts.outfit(
               fontSize: 14,
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurface.withAlpha(180),
             ),
           ),
         ],
@@ -191,6 +212,7 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
   }
 
   Widget _buildEmptyState() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
@@ -199,15 +221,15 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
           GlassmorphicCard(
             child: Column(
               children: [
-                const Icon(Icons.sensors_off_rounded,
-                    size: 48, color: AppColors.textTertiary),
+                Icon(Icons.sensors_off_rounded,
+                    size: 48, color: theme.colorScheme.onSurface.withAlpha(120)),
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'No students nearby',
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -216,7 +238,7 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 13,
-                    color: AppColors.textTertiary,
+                    color: theme.colorScheme.onSurface.withAlpha(120),
                     height: 1.5,
                   ),
                 ),
@@ -229,6 +251,7 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
   }
 
   Widget _buildPermissionDenied() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
@@ -245,7 +268,7 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -254,7 +277,7 @@ class _NearbyUsersScreenState extends State<NearbyUsersScreen>
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 13,
-                    color: AppColors.textTertiary,
+                    color: theme.colorScheme.onSurface.withAlpha(120),
                     height: 1.5,
                   ),
                 ),

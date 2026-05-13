@@ -23,10 +23,11 @@ class ScheduleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SafeArea(
       bottom: false,
       child: Container(
-        color: AppColors.scaffoldBg,
+        color: theme.scaffoldBackgroundColor,
         padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg, AppSpacing.md, AppSpacing.sm, AppSpacing.xs),
         child: Row(
@@ -40,7 +41,7 @@ class ScheduleHeader extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                     letterSpacing: -0.8,
                   ),
                 ),
@@ -49,7 +50,7 @@ class ScheduleHeader extends StatelessWidget {
                     '${schedule.entries.length} classes',
                     style: GoogleFonts.outfit(
                       fontSize: 12,
-                      color: AppColors.textTertiary,
+                      color: theme.colorScheme.onSurface.withAlpha(120),
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -63,8 +64,8 @@ class ScheduleHeader extends StatelessWidget {
             Tooltip(
               message: 'Scan photo',
               child: IconButton(
-                icon: const Icon(Icons.camera_alt_outlined,
-                    color: AppColors.textSecondary, size: 22),
+                icon: Icon(Icons.camera_alt_outlined,
+                    color: theme.colorScheme.onSurface.withAlpha(180), size: 22),
                 onPressed: onScanPhoto,
                 splashRadius: 20,
               ),
@@ -85,15 +86,16 @@ class _WeekPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onToggle,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: AppColors.primaryLight,
+          color: theme.colorScheme.primary.withAlpha(20),
           borderRadius: BorderRadius.circular(AppRadius.full),
-          border: Border.all(color: AppColors.primary.withAlpha(80)),
+          border: Border.all(color: theme.colorScheme.primary.withAlpha(80)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -103,13 +105,13 @@ class _WeekPill extends StatelessWidget {
               style: GoogleFonts.outfit(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: theme.colorScheme.primary,
                 letterSpacing: 0.3,
               ),
             ),
             const SizedBox(width: 3),
-            const Icon(Icons.swap_horiz_rounded,
-                size: 13, color: AppColors.primary),
+            Icon(Icons.swap_horiz_rounded,
+                size: 13, color: theme.colorScheme.primary),
           ],
         ),
       ),
@@ -123,6 +125,7 @@ class _AddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -130,11 +133,11 @@ class _AddButton extends StatelessWidget {
         height: 38,
         margin: const EdgeInsets.only(left: 4, right: 8),
         decoration: BoxDecoration(
-          color: AppColors.primary,
+          color: theme.colorScheme.primary,
           borderRadius: BorderRadius.circular(AppRadius.full),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withAlpha(70),
+              color: theme.colorScheme.primary.withAlpha(70),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -157,6 +160,7 @@ class ScheduleEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -166,12 +170,12 @@ class ScheduleEmptyState extends StatelessWidget {
             Container(
               width: 80,
               height: 80,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryLight,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withAlpha(20),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.grid_view_rounded,
-                  size: 36, color: AppColors.primary),
+              child: Icon(Icons.grid_view_rounded,
+                  size: 36, color: theme.colorScheme.primary),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
@@ -179,7 +183,7 @@ class ScheduleEmptyState extends StatelessWidget {
               style: GoogleFonts.outfit(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -188,7 +192,7 @@ class ScheduleEmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
                 fontSize: 14,
-                color: AppColors.textTertiary,
+                color: theme.colorScheme.onSurface.withAlpha(120),
                 height: 1.5,
               ),
             ),
@@ -198,7 +202,7 @@ class ScheduleEmptyState extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onAdd,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add Subject'),
+                label: Text('Add Subject'),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -215,18 +219,18 @@ class ScheduleEmptyState extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: onScanPhoto,
-                icon: const Icon(Icons.camera_alt_outlined,
-                    color: AppColors.textSecondary, size: 18),
+                icon: Icon(Icons.camera_alt_outlined,
+                    color: theme.colorScheme.onSurface.withAlpha(180), size: 18),
                 label: Text(
                   'Scan Timetable Photo',
                   style: GoogleFonts.outfit(
-                      color: AppColors.textSecondary,
+                      color: theme.colorScheme.onSurface.withAlpha(180),
                       fontWeight: FontWeight.w500,
                       fontSize: 14),
                 ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: const BorderSide(color: AppColors.surfaceBorder),
+                  side: BorderSide(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadius.lg)),
                 ),

@@ -64,13 +64,14 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = Color(widget.subject.colorValue);
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-        border: Border(top: BorderSide(color: AppColors.surfaceBorder)),
+        border: Border(top: BorderSide(color: theme.dividerTheme.color ?? AppColors.surfaceBorder)),
       ),
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
@@ -86,7 +87,7 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(top: 4, bottom: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceBorder,
+                  color: theme.dividerTheme.color ?? AppColors.surfaceBorder,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -119,7 +120,7 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
                         style: GoogleFonts.outfit(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       Text(
@@ -134,8 +135,8 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined,
-                      color: AppColors.textSecondary, size: 20),
+                  icon: Icon(Icons.edit_outlined,
+                      color: theme.colorScheme.onSurface.withAlpha(180), size: 20),
                   onPressed: widget.onEdit,
                 ),
                 IconButton(
@@ -146,18 +147,18 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-            const Divider(color: AppColors.surfaceBorder, height: 1),
+            Divider(color: theme.dividerTheme.color ?? AppColors.surfaceBorder, height: 1),
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
-                const Icon(Icons.notifications_outlined,
-                    size: 16, color: AppColors.textTertiary),
+                Icon(Icons.notifications_outlined,
+                    size: 16, color: theme.colorScheme.onSurface.withAlpha(120)),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     'Notify 10 min before',
                     style: GoogleFonts.outfit(
-                        color: AppColors.textSecondary, fontSize: 14),
+                        color: theme.colorScheme.onSurface.withAlpha(180), fontSize: 14),
                   ),
                 ),
                 Switch(
@@ -195,15 +196,16 @@ class DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.textTertiary),
+          Icon(icon, size: 16, color: theme.colorScheme.onSurface.withAlpha(120)),
           const SizedBox(width: AppSpacing.sm),
           Text(text,
               style: GoogleFonts.outfit(
-                  color: AppColors.textSecondary, fontSize: 14)),
+                  color: theme.colorScheme.onSurface.withAlpha(180), fontSize: 14)),
         ],
       ),
     );

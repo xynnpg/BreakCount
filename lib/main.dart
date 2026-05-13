@@ -18,6 +18,8 @@ import 'services/reminder_service.dart';
 import 'services/backup_service.dart';
 import 'services/storage_service.dart';
 import 'services/achievement_service.dart';
+import 'services/persona_service.dart';
+import 'services/streak_service.dart';
 import 'services/widget_service.dart';
 import 'utils/debug_log.dart';
 
@@ -92,6 +94,27 @@ void main() {
 
     AppThemeController.init(StorageService.getString(StorageKeys.themeId));
     AchievementService.init();
+    StreakService.init();
+    // Fire-and-forget — record today's open, don't block startup.
+    StreakService.recordOpen().then((streak) async {
+      // Streak milestone unlocks.
+      await AchievementService.onStreakMilestone(streak);
+    });
+    // Streak-milestone ladder firing whenever StreakService advances at runtime.
+    StreakService.addMilestoneListener((days) {
+      AchievementService.onStreakMilestone(days);
+    });
+    // Tick the hunter ladder whenever any achievement unlocks.
+    AchievementService.addUnlockListener((_) {
+      AchievementService.onAchievementCountChanged();
+    });
+    PersonaService.instance.init();
+    // Keep home-widget in sync with achievement unlocks + persona swaps.
+    AchievementService.addUnlockListener((_) => WidgetService.update());
+    PersonaService.instance.currentNotifier
+        .addListener(() => WidgetService.update());
+    // Theme changes should also refresh the home-screen widget.
+    AppThemeController.notifier.addListener(() => WidgetService.update());
 
     if (StorageService.getBool(StorageKeys.notificationsEnabled) != false) {
       final reminders = ReminderService.getUpcomingReminders();
@@ -161,12 +184,15 @@ class _BreakCountAppState extends State<BreakCountApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BreakCount',
-      debugShowCheckedModeBanner: kDebugMode,
-      theme: AppTheme.build(AppThemeController.current),
-      initialRoute: widget.initialRoute,
-      onGenerateRoute: generateRoute,
+    return ValueListenableBuilder<Color>(
+      valueListenable: AppThemeController.personaTintNotifier,
+      builder: (ctx, tint, child) => MaterialApp(
+        title: 'BreakCount',
+        debugShowCheckedModeBanner: kDebugMode,
+        theme: AppTheme.build(AppThemeController.current, personaTint: tint),
+        initialRoute: widget.initialRoute,
+        onGenerateRoute: generateRoute,
+      ),
     );
   }
 }

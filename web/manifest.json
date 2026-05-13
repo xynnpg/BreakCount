@@ -1,11 +1,11 @@
 {
-    "name": "breakcount",
-    "short_name": "breakcount",
+    "name": "BreakCount",
+    "short_name": "BreakCount",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FDFAF7",
+    "theme_color": "#6F4E37",
+    "description": "Countdown to your next school break, with persona-tinted vibes and achievements.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

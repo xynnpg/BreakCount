@@ -3,7 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../app/constants.dart';
 import '../models/schedule.dart';
 import '../models/subject.dart';
+import '../services/calculator_service.dart';
 import '../services/schedule_service.dart';
+import '../services/school_data_service.dart';
 import '../services/storage_service.dart';
 import 'glassmorphic_card.dart';
 
@@ -30,6 +32,7 @@ class CurrentClassCard extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, _ClassSituation s) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Container(
@@ -50,7 +53,7 @@ class CurrentClassCard extends StatelessWidget {
                 s.label,
                 style: GoogleFonts.outfit(
                   fontSize: 11,
-                  color: AppColors.textTertiary,
+                  color: theme.colorScheme.onSurface.withAlpha(120),
                   letterSpacing: 0.8,
                 ),
               ),
@@ -60,7 +63,7 @@ class CurrentClassCard extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -68,7 +71,7 @@ class CurrentClassCard extends StatelessWidget {
                 Text(
                   s.subtitle!,
                   style: GoogleFonts.outfit(
-                      fontSize: 12, color: AppColors.textSecondary),
+                      fontSize: 12, color: theme.colorScheme.onSurface.withAlpha(180)),
                 ),
             ],
           ),
@@ -99,12 +102,25 @@ class CurrentClassCard extends StatelessWidget {
     final now = DateTime.now();
     final dayOfWeek = now.weekday; // 1=Mon…7=Sun
 
+    // Check if on school break first
+    final schoolYear = SchoolDataService.getCached();
+    if (schoolYear != null && CalculatorService.isOnBreak(schoolYear)) {
+      final activeBreak = CalculatorService.activeBreak(schoolYear);
+      return _ClassSituation(
+        icon: Icons.beach_access_outlined,
+        color: AppColors.success,
+        label: 'ON BREAK',
+        title: activeBreak?.name ?? 'School Break',
+        subtitle: 'Enjoy your time off!',
+      );
+    }
+
     // Weekend
     if (dayOfWeek > 5) {
       final next = _nextSchoolEntry(schedule, subjects, currentWeek, now);
       return _ClassSituation(
         icon: Icons.weekend_outlined,
-        color: AppColors.accentCyan,
+        color: AppColors.primary,
         label: 'WEEKEND',
         title: 'No school today',
         subtitle:
@@ -160,7 +176,7 @@ class CurrentClassCard extends StatelessWidget {
           ((start.toFractionalHours() - nowFrac) * 60).round();
       return _ClassSituation(
         icon: Icons.schedule_outlined,
-        color: AppColors.primaryPurple,
+        color: AppColors.primary,
         label: 'NEXT CLASS',
         title: nextToday.subjectName,
         subtitle: _buildSubjectSubtitle(nextToday.entry, nextToday.subject),

@@ -3,6 +3,7 @@
      Premium Apple/Samsung UI style: white rounded card, no divider lines.
      [large "12" days] | ["days to\nSPRING BREAK" label] | [progress ring] -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_card_bg"

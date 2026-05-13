@@ -111,7 +111,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           width: active ? 24 : 5,
           height: 6,
           decoration: BoxDecoration(
-            color: active ? AppColors.primary : AppColors.surfaceBorder,
+            color: active ? Theme.of(context).colorScheme.primary : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
             borderRadius: BorderRadius.circular(AppRadius.full),
           ),
         );
@@ -141,7 +141,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       child: Text(
                         'Skip',
                         style: GoogleFonts.outfit(
-                          color: AppColors.textTertiary,
+                          color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),

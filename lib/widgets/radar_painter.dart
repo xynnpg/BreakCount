@@ -3,8 +3,12 @@ import '../app/constants.dart';
 
 class RadarPainter extends CustomPainter {
   final double progress;
+  final Color color;
 
-  const RadarPainter({required this.progress});
+  const RadarPainter({
+    required this.progress,
+    this.color = AppColors.primary,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -21,19 +25,19 @@ class RadarPainter extends CustomPainter {
       final radius = maxRadius * phase;
       final opacity = (1.0 - phase) * 0.5;
       final paint = Paint()
-        ..color = AppColors.primary.withValues(alpha: opacity)
+        ..color = color.withValues(alpha: opacity)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.0;
       canvas.drawCircle(center, radius, paint);
     }
 
     final dotPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.8)
+      ..color = color.withValues(alpha: 0.8)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, 6.0, dotPaint);
   }
 
   @override
   bool shouldRepaint(RadarPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+      oldDelegate.progress != progress || oldDelegate.color != color;
 }

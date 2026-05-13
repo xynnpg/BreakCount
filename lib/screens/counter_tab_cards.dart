@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../app/constants.dart';
+import '../app/persona_theme_ext.dart';
+import '../data/persona_copy.dart';
 import '../models/school_year.dart';
 import '../services/calendar_service.dart';
 import '../services/storage_service.dart';
@@ -24,6 +26,17 @@ class CounterNextBreakCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = DateFormat('d MMM yyyy');
+    final tint = context.personaTint;
+    final personaId =
+        StorageService.getString(StorageKeys.widgetPersona) ?? 'hype';
+    final daysToBreak = next.startDate.difference(DateTime.now()).inDays;
+    final hint = PersonaCopy.get(
+      personaId,
+      'next_break_hint',
+      vars: {'days': '$daysToBreak', 'name': next.name},
+    );
+    final theme = Theme.of(context);
+
     return GlassmorphicCard(
       animationDelay: 80,
       padding: EdgeInsets.zero,
@@ -33,13 +46,16 @@ class CounterNextBreakCard extends StatelessWidget {
           children: [
             Container(
               width: 4,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [AppColors.primary, Color(0xFFA0714F)],
+                  colors: [
+                    tint,
+                    Color.alphaBlend(Colors.white.withAlpha(60), tint),
+                  ],
                 ),
-                borderRadius: BorderRadius.horizontal(
+                borderRadius: const BorderRadius.horizontal(
                     left: Radius.circular(AppRadius.lg)),
               ),
             ),
@@ -56,7 +72,7 @@ class CounterNextBreakCard extends StatelessWidget {
                             onBreak ? 'BREAK ENDS' : 'NEXT BREAK',
                             style: GoogleFonts.outfit(
                               fontSize: 10,
-                              color: AppColors.textTertiary,
+                              color: theme.colorScheme.onSurface.withAlpha(120),
                               letterSpacing: 1.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -67,7 +83,7 @@ class CounterNextBreakCard extends StatelessWidget {
                             style: GoogleFonts.outfit(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              color: theme.colorScheme.onSurface,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -76,9 +92,22 @@ class CounterNextBreakCard extends StatelessWidget {
                             '${fmt.format(next.startDate)} – ${fmt.format(next.endDate)}',
                             style: GoogleFonts.outfit(
                               fontSize: 12,
-                              color: AppColors.textTertiary,
+                              color: theme.colorScheme.onSurface.withAlpha(120),
                             ),
                           ),
+                          if (!onBreak && hint.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              hint,
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontStyle: FontStyle.italic,
+                                color: tint,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -91,7 +120,7 @@ class CounterNextBreakCard extends StatelessWidget {
                           style: GoogleFonts.outfit(
                             fontSize: 34,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                            color: tint,
                             height: 1,
                             letterSpacing: -1.5,
                           ),
@@ -100,7 +129,7 @@ class CounterNextBreakCard extends StatelessWidget {
                           'days',
                           style: GoogleFonts.outfit(
                             fontSize: 10,
-                            color: AppColors.textTertiary,
+                            color: theme.colorScheme.onSurface.withAlpha(120),
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -164,6 +193,7 @@ class CounterTimelineSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent =
         Color(StorageService.getInt(StorageKeys.accentColor) ?? 0xFF6F4E37);
+    final theme = Theme.of(context);
     return GlassmorphicCard(
       animationDelay: 240,
       child: Column(
@@ -176,7 +206,7 @@ class CounterTimelineSection extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textTertiary,
+                  color: theme.colorScheme.onSurface.withAlpha(120),
                   letterSpacing: 2.0,
                 ),
               ),
@@ -186,11 +216,11 @@ class CounterTimelineSection extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
+                    color: theme.colorScheme.primary.withAlpha(20),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.ios_share_rounded,
-                      size: 15, color: AppColors.primary),
+                  child: Icon(Icons.ios_share_rounded,
+                      size: 15, color: theme.colorScheme.primary),
                 ),
               ),
             ],
@@ -212,8 +242,9 @@ class CounterNoData extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
@@ -224,14 +255,12 @@ class CounterNoData extends StatelessWidget {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  gradient: const RadialGradient(
-                    colors: [AppColors.primaryLight, Color(0xFFF5E8DC)],
-                  ),
+                  color: theme.colorScheme.primary.withAlpha(20),
                   shape: BoxShape.circle,
                   boxShadow: const [AppElevation.low],
                 ),
-                child: const Icon(Icons.cloud_off_outlined,
-                    size: 32, color: AppColors.primary),
+                child: Icon(Icons.cloud_off_outlined,
+                    size: 32, color: theme.colorScheme.primary),
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
@@ -239,7 +268,7 @@ class CounterNoData extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -247,7 +276,7 @@ class CounterNoData extends StatelessWidget {
                 'Go to Settings and refresh your\nschool calendar.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(
-                  color: AppColors.textTertiary,
+                  color: theme.colorScheme.onSurface.withAlpha(120),
                   fontSize: 14,
                   height: 1.6,
                 ),
@@ -255,7 +284,7 @@ class CounterNoData extends StatelessWidget {
               const SizedBox(height: AppSpacing.xl),
               FilledButton(
                 onPressed: () => Navigator.pushNamed(context, '/settings'),
-                child: const Text('Open Settings'),
+                child: Text('Open Settings'),
               ),
             ],
           ),

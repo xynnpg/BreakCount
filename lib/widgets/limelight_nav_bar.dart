@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../app/constants.dart';
+import '../app/persona_theme_ext.dart';
 
 /// A floating bottom navigation bar with a limelight spotlight effect.
 ///
@@ -31,28 +32,31 @@ class _LimelightNavBarState extends State<LimelightNavBar> {
 
   @override
   Widget build(BuildContext context) {
+    final tint = context.personaTint;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
         child: Container(
           height: _navHeight,
           decoration: BoxDecoration(
-            color: const Color(0xFFFFFEFB), // slightly warm white
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
-              color: const Color(0xFFE8D5C4),
+              color: theme.dividerTheme.color ?? AppColors.surfaceBorder,
               width: 0.5,
             ),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Color(0x14000000),
+                color: isDark ? Colors.black26 : const Color(0x14000000),
                 blurRadius: 24,
-                offset: Offset(0, -4), // upward shadow for floating feel
+                offset: const Offset(0, -4),
               ),
               BoxShadow(
-                color: Color(0x08000000),
+                color: isDark ? Colors.black12 : const Color(0x08000000),
                 blurRadius: 2,
-                offset: Offset(0, -1), // inner top shadow — lifts bar from content
+                offset: const Offset(0, -1),
               ),
             ],
           ),
@@ -77,10 +81,10 @@ class _LimelightNavBarState extends State<LimelightNavBar> {
                       top: 4,
                       width: itemWidth,
                       height: _navHeight - 4,
-                      child: const _SpotlightCone(),
+                      child: _SpotlightCone(tint: tint),
                     ),
 
-                    // Coffee pill at top of nav, above active icon
+                    // Persona-tinted pill at top of nav, above active icon
                     AnimatedPositioned(
                       duration: _animDuration,
                       curve: _animCurve,
@@ -89,9 +93,9 @@ class _LimelightNavBarState extends State<LimelightNavBar> {
                       width: pillWidth,
                       height: 4,
                       child: Container(
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.vertical(
+                        decoration: BoxDecoration(
+                          color: tint,
+                          borderRadius: const BorderRadius.vertical(
                             bottom: Radius.circular(2),
                           ),
                         ),
@@ -125,8 +129,8 @@ class _LimelightNavBarState extends State<LimelightNavBar> {
                                         widget.items[i].icon,
                                         size: 22,
                                         color: selected
-                                            ? AppColors.primary
-                                            : AppColors.textSecondary,
+                                            ? tint
+                                            : Theme.of(context).colorScheme.onSurface.withAlpha(200),
                                       ),
                                     ),
                                   ),
@@ -139,8 +143,8 @@ class _LimelightNavBarState extends State<LimelightNavBar> {
                                           ? FontWeight.w600
                                           : FontWeight.w400,
                                       color: selected
-                                          ? AppColors.primary
-                                          : const Color(0xFFA89888),
+                                          ? tint
+                                          : theme.colorScheme.onSurface.withAlpha(100),
                                     ),
                                     child: Text(widget.items[i].label),
                                   ),
@@ -165,17 +169,21 @@ class _LimelightNavBarState extends State<LimelightNavBar> {
 /// The trapezoidal spotlight cone that glows below the pill.
 /// Narrow at top (~60px span), wider at bottom (~80px span).
 class _SpotlightCone extends StatelessWidget {
-  const _SpotlightCone();
+  final Color tint;
+  const _SpotlightCone({required this.tint});
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _SpotlightPainter(),
+      painter: _SpotlightPainter(tint: tint),
     );
   }
 }
 
 class _SpotlightPainter extends CustomPainter {
+  final Color tint;
+  _SpotlightPainter({required this.tint});
+
   @override
   void paint(Canvas canvas, Size size) {
     // Trapezoid: 60px wide at top center → 80px wide at bottom center
@@ -192,12 +200,12 @@ class _SpotlightPainter extends CustomPainter {
 
     final rect = Rect.fromLTWH(0, 0, size.width, size.height);
     final paint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Color(0x286F4E37), // coffee/16 at top — more visible spotlight
-          Color(0x006F4E37), // transparent at bottom
+          tint.withAlpha(40), // tint top — more visible spotlight
+          tint.withAlpha(0),  // transparent at bottom
         ],
       ).createShader(rect);
 
@@ -205,7 +213,7 @@ class _SpotlightPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SpotlightPainter old) => false;
+  bool shouldRepaint(_SpotlightPainter old) => old.tint != tint;
 }
 
 class LimelightNavItem {

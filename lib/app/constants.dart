@@ -138,6 +138,9 @@ class StorageKeys {
   static const String autoBackup = 'auto_backup';
   static const String widgetPersona = 'widget_persona';
   static const String achievements = 'achievements_v1';
+  static const String vibeBeaconEnabled = 'vibe_beacon_enabled';
+  static const String personalizedRecapEnabled = 'personalized_recap_enabled';
+  static const String liveActivityEnabled = 'live_activity_enabled';
 }
 
 /// Countries with locally bundled, verified school year data (2025-2026).

@@ -20,6 +20,7 @@ class SubjectChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = Color(subject.colorValue);
     return GestureDetector(
       onTap: onTap,
@@ -54,7 +55,7 @@ class SubjectChip extends StatelessWidget {
               style: GoogleFonts.outfit(
                 fontSize: 13,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                color: selected ? color : AppColors.textSecondary,
+                color: selected ? color : Theme.of(context).colorScheme.onSurface.withAlpha(200),
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -65,7 +66,7 @@ class SubjectChip extends StatelessWidget {
                 '• ${subject.teacher}',
                 style: GoogleFonts.outfit(
                   fontSize: 11,
-                  color: AppColors.textTertiary,
+                  color: theme.colorScheme.onSurface.withAlpha(120),
                 ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,

@@ -1,7 +1,7 @@
 name: breakcount
 description: "BreakCount — countdown to your next school break, manage your schedule, and track exams."
 publish_to: 'none'
-version: 2.0.2+4
+version: 2.1.0+5
 
 environment:
   sdk: ^3.10.4
@@ -32,6 +32,9 @@ dependencies:
   url_launcher: ^6.3.0
   file_picker: ^8.1.2
   home_widget: ^0.6.0
+  package_info_plus: ^8.0.0
+  fl_chart: ^0.69.0
+  google_mlkit_text_recognition: ^0.13.0
 
 dev_dependencies:
   flutter_test:
@@ -41,3 +44,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - CHANGELOG.md

@@ -78,8 +78,9 @@ class _CountrySelectionScreenState extends State<CountrySelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,6 +98,7 @@ class _CountrySelectionScreenState extends State<CountrySelectionScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
@@ -108,7 +110,7 @@ class _CountrySelectionScreenState extends State<CountrySelectionScreen> {
             style: GoogleFonts.outfit(
               fontSize: 28,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
           ),
@@ -117,7 +119,7 @@ class _CountrySelectionScreenState extends State<CountrySelectionScreen> {
             'We\'ll fetch your school calendar once and cache it offline.',
             style: GoogleFonts.outfit(
               fontSize: 14,
-              color: AppColors.textTertiary,
+              color: theme.colorScheme.onSurface.withAlpha(140),
             ),
           ),
         ],
@@ -126,19 +128,20 @@ class _CountrySelectionScreenState extends State<CountrySelectionScreen> {
   }
 
   Widget _buildSearchBar() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: TextField(
         controller: _searchController,
         onChanged: (v) => setState(() => _query = v),
-        style: GoogleFonts.outfit(color: AppColors.textPrimary),
+        style: GoogleFonts.outfit(color: theme.colorScheme.onSurface),
         decoration: InputDecoration(
           hintText: 'Search country...',
-          prefixIcon: const Icon(Icons.search_rounded,
-              color: AppColors.textTertiary, size: 20),
+          prefixIcon: Icon(Icons.search_rounded,
+              color: theme.colorScheme.onSurface.withAlpha(140), size: 20),
           suffixIcon: _query.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear, color: AppColors.textTertiary),
+                  icon: Icon(Icons.clear, color: theme.colorScheme.onSurface.withAlpha(140)),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _query = '');
@@ -156,7 +159,7 @@ class _CountrySelectionScreenState extends State<CountrySelectionScreen> {
       return Center(
         child: Text(
           'No countries found',
-          style: GoogleFonts.outfit(color: AppColors.textTertiary),
+          style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
         ),
       );
     }
@@ -195,6 +198,7 @@ class _CountrySelectionScreenState extends State<CountrySelectionScreen> {
   }
 
   Widget _buildConfirmButton(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: SizedBox(
@@ -204,8 +208,8 @@ class _CountrySelectionScreenState extends State<CountrySelectionScreen> {
               ? () => _confirm(context)
               : null,
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            disabledBackgroundColor: AppColors.surfaceBorder,
+            backgroundColor: theme.colorScheme.primary,
+            disabledBackgroundColor: theme.dividerTheme.color ?? AppColors.surfaceBorder,
             padding: const EdgeInsets.symmetric(vertical: 18),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -227,7 +231,7 @@ class _CountrySelectionScreenState extends State<CountrySelectionScreen> {
                     fontWeight: FontWeight.w600,
                     color: _selectedCountry != null
                         ? Colors.white
-                        : AppColors.textSecondary,
+                        : theme.colorScheme.onSurface.withAlpha(200),
                   ),
                 ),
         ),
@@ -251,6 +255,7 @@ class _CountryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -258,10 +263,10 @@ class _CountryTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : Colors.white,
+          color: selected ? theme.colorScheme.primary.withAlpha(20) : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.surfaceBorder,
+            color: selected ? theme.colorScheme.primary : (theme.dividerTheme.color ?? AppColors.surfaceBorder),
             width: selected ? 1.5 : 1,
           ),
           boxShadow: const [
@@ -283,7 +288,7 @@ class _CountryTile extends StatelessWidget {
                   fontSize: 13,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   color:
-                      selected ? AppColors.primary : AppColors.textSecondary,
+                      selected ? theme.colorScheme.primary : theme.colorScheme.onSurface.withAlpha(200),
                 ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,

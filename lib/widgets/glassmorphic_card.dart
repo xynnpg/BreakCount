@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../app/constants.dart';
+import '../app/theme_preset.dart';
 
 /// Premium warm card — upgraded gradient, gradient border (inset light source),
 /// named shadow tokens, snappier entrance, optional press-scale feedback.
@@ -124,35 +125,72 @@ class _GlassmorphicCardState extends State<GlassmorphicCard>
   }
 
   Widget _buildCard() {
-    final radius = BorderRadius.circular(widget.borderRadius);
+    final style = AppThemeController.current.style;
+    final radius = BorderRadius.circular(
+        widget.borderRadius != AppRadius.lg ? widget.borderRadius : style.cardBorderRadius);
+    final theme = Theme.of(context);
+    final surface = theme.colorScheme.surface;
+    final isDark = theme.brightness == Brightness.dark;
+    final primary = theme.colorScheme.primary;
+    // Soft gradient blends the surface with a slightly warmer tint toward the
+    // bottom-right for light themes, or slightly lighter for dark themes.
+    final gradTop = surface;
+    final gradMid = isDark
+        ? Color.alphaBlend(Colors.white.withAlpha(8), surface)
+        : Color.alphaBlend(const Color(0xFFFFF8EF).withAlpha(160), surface);
+    final gradBottom = isDark
+        ? Color.alphaBlend(Colors.white.withAlpha(14), surface)
+        : Color.alphaBlend(const Color(0xFFFDF5EE).withAlpha(200), surface);
+
+    // Shadow with intensity from ThemeStyle
+    final shadows = <BoxShadow>[];
+    if (style.shadowIntensity > 0) {
+      shadows.add(BoxShadow(
+        color: AppElevation.mid.color.withAlpha(
+            ((AppElevation.mid.color.a * 255) * style.shadowIntensity).round().clamp(0, 255)),
+        blurRadius: AppElevation.mid.blurRadius,
+        offset: AppElevation.mid.offset,
+      ));
+      shadows.add(BoxShadow(
+        color: AppElevation.ambient.color.withAlpha(
+            ((AppElevation.ambient.color.a * 255) * style.shadowIntensity).round().clamp(0, 255)),
+        blurRadius: AppElevation.ambient.blurRadius,
+        offset: AppElevation.ambient.offset,
+      ));
+    }
+    // Glow effect
+    if (style.useGlow && style.glowIntensity > 0) {
+      shadows.add(BoxShadow(
+        color: primary.withAlpha((style.glowIntensity * 40).round()),
+        blurRadius: 16,
+        spreadRadius: 1,
+      ));
+    }
+
     return Container(
       width: widget.width,
       height: widget.height,
       decoration: BoxDecoration(
         borderRadius: radius,
-        boxShadow: const [
-          AppElevation.mid,
-          AppElevation.ambient,
-        ],
+        boxShadow: shadows.isEmpty ? null : shadows,
       ),
       child: ClipRRect(
         borderRadius: radius,
         child: CustomPaint(
           painter: _GradientBorderPainter(
-            radius: widget.borderRadius,
-            borderColor: widget.borderColor,
+            radius: radius.topLeft.x,
+            borderColor: widget.borderColor ??
+                (isDark
+                    ? theme.dividerTheme.color ?? const Color(0xFF2A3040)
+                    : null),
           ),
           child: Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                stops: [0.0, 0.5, 1.0],
-                colors: [
-                  Colors.white,
-                  Color(0xFFFEFDF5),
-                  Color(0xFFFDF5EE),
-                ],
+                stops: const [0.0, 0.5, 1.0],
+                colors: [gradTop, gradMid, gradBottom],
               ),
               borderRadius: radius,
             ),

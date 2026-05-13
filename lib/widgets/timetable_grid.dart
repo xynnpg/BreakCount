@@ -328,7 +328,7 @@ class _DayHeader extends StatelessWidget {
                           fontSize: 12,
                           fontWeight:
                               isToday ? FontWeight.w700 : FontWeight.w400,
-                          color: isToday ? primary : AppColors.textTertiary,
+                          color: isToday ? primary : Theme.of(context).colorScheme.onSurface.withAlpha(140),
                           letterSpacing: 0.3,
                         ),
                       ),
@@ -359,6 +359,7 @@ class _TimeLabels extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Stack(
       children: List.generate(endHour - startHour, (i) {
         return Positioned(
@@ -370,7 +371,7 @@ class _TimeLabels extends StatelessWidget {
             textAlign: TextAlign.right,
             style: GoogleFonts.outfit(
               fontSize: 10,
-              color: AppColors.textTertiary,
+              color: theme.colorScheme.onSurface.withAlpha(120),
               fontWeight: FontWeight.w300,
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../app/constants.dart';
+import '../app/persona_theme_ext.dart';
 import '../widgets/animated_counter.dart';
 import '../widgets/glassmorphic_card.dart';
 import '../widgets/progress_ring.dart';
@@ -27,6 +28,7 @@ class CounterProgressRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isPercent = ringMode == CounterRingMode.percent;
     final valueSize = isPercent
         ? 30.0
@@ -39,6 +41,11 @@ class CounterProgressRing extends StatelessWidget {
       child: ProgressRing(
         progress: progress,
         size: 192,
+        startColor: context.personaTint,
+        endColor: Color.alphaBlend(
+          Colors.white.withAlpha(60),
+          context.personaTint,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -62,7 +69,7 @@ class CounterProgressRing extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontSize: valueSize,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                   height: 1,
                 ),
                 textAlign: TextAlign.center,
@@ -73,7 +80,7 @@ class CounterProgressRing extends StatelessWidget {
               ringLabel.isEmpty ? 'School Year' : ringLabel,
               style: GoogleFonts.outfit(
                 fontSize: 10,
-                color: AppColors.textTertiary,
+                color: theme.colorScheme.onSurface.withAlpha(120),
                 letterSpacing: 0.5,
               ),
               textAlign: TextAlign.center,
@@ -83,7 +90,7 @@ class CounterProgressRing extends StatelessWidget {
               'tap to cycle',
               style: GoogleFonts.outfit(
                 fontSize: 9,
-                color: AppColors.textTertiary.withAlpha(120),
+                color: theme.colorScheme.onSurface.withAlpha(120).withAlpha(120),
               ),
               textAlign: TextAlign.center,
             ),
@@ -112,18 +119,26 @@ class CounterCountdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surface = theme.colorScheme.surface;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
           vertical: AppSpacing.xl, horizontal: AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFDF8F5), Color(0xFFFAF3EC)],
+          colors: isDark
+              ? [surface, Color.alphaBlend(Colors.white.withAlpha(10), surface)]
+              : [const Color(0xFFFDF8F5), const Color(0xFFFAF3EC)],
         ),
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: const Color(0xFFEDD9C8), width: 1),
+        border: Border.all(
+          color: theme.dividerTheme.color ?? AppColors.surfaceBorder,
+          width: 1,
+        ),
         boxShadow: const [AppElevation.mid, AppElevation.ambient],
       ),
       child: Column(
@@ -133,9 +148,9 @@ class CounterCountdownCard extends StatelessWidget {
               Container(
                 width: 2,
                 height: 14,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFA0714F),
-                  borderRadius: BorderRadius.all(Radius.circular(1)),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: const BorderRadius.all(Radius.circular(1)),
                 ),
               ),
               const SizedBox(width: 8),
@@ -144,7 +159,7 @@ class CounterCountdownCard extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textTertiary,
+                  color: theme.colorScheme.onSurface.withAlpha(120),
                   letterSpacing: 2.0,
                 ),
               ),
@@ -170,6 +185,7 @@ class CounterYearOverBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GlassmorphicCard(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
@@ -180,14 +196,14 @@ class CounterYearOverBadge extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'School year is complete.',
             style: GoogleFonts.outfit(
-              color: AppColors.textTertiary,
+              color: theme.colorScheme.onSurface.withAlpha(120),
               fontSize: 14,
             ),
           ),

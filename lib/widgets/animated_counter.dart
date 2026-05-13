@@ -52,6 +52,7 @@ class _DotSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 22, left: 4, right: 4),
       child: Column(
@@ -60,18 +61,18 @@ class _DotSeparator extends StatelessWidget {
           Container(
             width: 5,
             height: 5,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.textTertiary,
+              color: theme.colorScheme.onSurface.withAlpha(120),
             ),
           ),
           const SizedBox(height: 6),
           Container(
             width: 5,
             height: 5,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.textTertiary,
+              color: theme.colorScheme.onSurface.withAlpha(120),
             ),
           ),
         ],
@@ -92,6 +93,7 @@ class _CountUnit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final twoDigit = value.toString().padLeft(2, '0');
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -110,7 +112,7 @@ class _CountUnit extends StatelessWidget {
           style: GoogleFonts.outfit(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: AppColors.textTertiary,
+            color: theme.colorScheme.onSurface.withAlpha(120),
             letterSpacing: 2.5,
           ),
         ),
@@ -195,6 +197,9 @@ class _FlipDigitState extends State<_FlipDigit>
   }
 
   Widget _buildDigitCard(String digit) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surface = theme.colorScheme.surface;
     return SizedBox(
       width: 56,
       height: 74,
@@ -204,23 +209,28 @@ class _FlipDigitState extends State<_FlipDigit>
             width: 56,
             height: 74,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFFFFFBF8), Color(0xFFFFF2E8)],
+                colors: isDark
+                    ? [
+                        Color.alphaBlend(Colors.white.withAlpha(12), surface),
+                        surface,
+                      ]
+                    : [const Color(0xFFFFFBF8), const Color(0xFFFFF2E8)],
               ),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.surfaceBorder),
+              border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
               boxShadow: [
                 BoxShadow(
-                  color: widget.accentColor.withAlpha(50),
+                  color: widget.accentColor.withAlpha(isDark ? 30 : 50),
                   blurRadius: 20,
                   offset: const Offset(0, 5),
                 ),
-                const BoxShadow(
-                  color: Color(0x0A000000),
+                BoxShadow(
+                  color: isDark ? Colors.black12 : const Color(0x0A000000),
                   blurRadius: 3,
-                  offset: Offset(0, 1),
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
@@ -230,7 +240,7 @@ class _FlipDigitState extends State<_FlipDigit>
               style: GoogleFonts.outfit(
                 fontSize: 38,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
                 height: 1,
                 letterSpacing: -1.5,
               ),
@@ -243,7 +253,7 @@ class _FlipDigitState extends State<_FlipDigit>
             right: 0,
             child: Container(
               height: 0.5,
-              color: AppColors.surfaceBorder,
+              color: theme.dividerTheme.color ?? AppColors.surfaceBorder,
             ),
           ),
         ],

@@ -11,6 +11,7 @@ import '../app/constants.dart';
 import '../data/subject_suggestions.dart';
 import '../data/subject_colors.dart';
 import 'analytics_service.dart';
+import 'ocr_timetable_parser.dart';
 import '../utils/debug_log.dart';
 
 const String _workerUrl = 'https://breakcount-ai.breakcount.workers.dev';
@@ -47,12 +48,37 @@ class AiScheduleService {
   }
 
   /// Parses [imageFile] and returns detected entries + subjects.
+  ///
+  /// v2.1.0: tries an offline OCR pre-pass first (via
+  /// [OcrTimetableParser]). If confident, skips the AI call entirely.
   static Future<AiScheduleResult?> parseImage(
     File imageFile,
     String? apiKey, {
     String country = 'Romania',
     void Function(String)? onError,
   }) async {
+    // Offline pre-pass — never blocks, silently falls through on any failure.
+    try {
+      final ocr = await OcrTimetableParser.parse(imageFile, country: country);
+      if (ocr != null && ocr.schedule.entries.length >= 20 &&
+          ocr.confidence >= 0.6) {
+        dLog('AI', 'OCR pre-pass succeeded (conf=${ocr.confidence.toStringAsFixed(2)}, '
+            'entries=${ocr.schedule.entries.length}) — skipping AI call');
+        AnalyticsService.aiScanStarted('ocr_offline');
+        AnalyticsService.aiScanSuccess(ocr.schedule.entries.length);
+        return AiScheduleResult(
+          subjects: ocr.schedule.subjects,
+          entries: ocr.schedule.entries,
+          isOfflineOcr: true,
+        );
+      } else if (ocr != null) {
+        dLog('AI', 'OCR pre-pass low confidence (${ocr.confidence.toStringAsFixed(2)}, '
+            '${ocr.schedule.entries.length} entries) — falling through to AI');
+      }
+    } catch (e) {
+      dLog('AI', 'OCR pre-pass failed: $e — falling through to AI');
+    }
+
     final key = apiKey?.trim() ?? '';
     final provider = key.startsWith('gsk_') ? 'groq' : 'worker';
     dLog('AI', 'parseImage → provider=$provider, country=$country, file=${imageFile.path.split('/').last}');
@@ -347,6 +373,15 @@ class _Period {
 class AiScheduleResult {
   final List<Subject> subjects;
   final List<ScheduleEntry> entries;
-  const AiScheduleResult({required this.subjects, required this.entries});
+
+  /// True when this result was produced offline via OCR (no AI call was made).
+  /// Surfaced in the review screen as a green "Parsed offline" banner.
+  final bool isOfflineOcr;
+
+  const AiScheduleResult({
+    required this.subjects,
+    required this.entries,
+    this.isOfflineOcr = false,
+  });
   bool get isEmpty => entries.isEmpty;
 }

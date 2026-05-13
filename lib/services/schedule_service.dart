@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show ValueNotifier;
 import '../models/schedule.dart';
 import '../models/subject.dart';
 import '../app/constants.dart';
+import 'achievement_service.dart';
 import 'storage_service.dart';
 
 class ScheduleService {
@@ -35,6 +36,7 @@ class ScheduleService {
       entries: [...schedule.entries, entry],
     );
     await StorageService.saveString(StorageKeys.schedule, updated.toJsonString());
+    await _maybeEarlyBird(updated);
   }
 
   static Future<void> updateEntry(ScheduleEntry entry) async {
@@ -42,6 +44,7 @@ class ScheduleService {
     final entries = schedule.entries.map((e) => e.id == entry.id ? entry : e).toList();
     final updated = schedule.copyWith(entries: entries);
     await StorageService.saveString(StorageKeys.schedule, updated.toJsonString());
+    await _maybeEarlyBird(updated);
   }
 
   static Future<void> deleteEntry(String id) async {
@@ -112,7 +115,18 @@ class ScheduleService {
       subjects.map((s) => s.toJson()).toList(),
     );
     scheduleRefresh.value++;
+    await _maybeEarlyBird(schedule);
   }
 
   static const String _subjectsKey = 'subjects_data';
+
+  /// If [schedule] has any entry starting before 08:00, unlock `early_bird`.
+  /// No-op if already unlocked.
+  static Future<void> _maybeEarlyBird(Schedule schedule) async {
+    final hasEarly =
+        schedule.entries.any((e) => e.startTime.hour < 8);
+    if (hasEarly) {
+      await AchievementService.onEarlyClass();
+    }
+  }
 }

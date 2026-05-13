@@ -185,15 +185,33 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
   // ── Day screen ────────────────────────────────────────────────────────────
 
   Widget _buildDayScreen(int dayIdx) {
+    final theme = Theme.of(context);
     final day = dayIdx + 1;
     final dayEntries = _forDay(day);
     final isLast = dayIdx == 4;
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
+            if (widget.initialResult.isOfflineOcr)
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.offline_bolt_rounded, color: Color(0xFF2E7D32), size: 20),
+                    SizedBox(width: 8),
+                    Text('Parsed offline — no API call used',
+                      style: TextStyle(color: Color(0xFF2E7D32), fontSize: 13, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
             _buildHeader(dayIdx),
             _buildProgress(dayIdx),
             Expanded(
@@ -220,6 +238,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
   }
 
   Widget _buildHeader(int dayIdx) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: Row(
@@ -230,14 +249,14 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
             _dayNames[dayIdx],
             style: GoogleFonts.outfit(
               fontSize: 28, fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary, letterSpacing: -0.5,
+              color: theme.colorScheme.onSurface, letterSpacing: -0.5,
             ),
           ),
           const Spacer(),
           Text(
             '${dayIdx + 1}/5',
             style: GoogleFonts.outfit(
-                fontSize: 14, color: AppColors.textTertiary),
+                fontSize: 14, color: theme.colorScheme.onSurface.withAlpha(140)),
           ),
         ],
       ),
@@ -245,6 +264,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
   }
 
   Widget _buildProgress(int step) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       child: Row(
@@ -255,7 +275,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
               duration: const Duration(milliseconds: 250),
               height: 4,
               decoration: BoxDecoration(
-                color: i <= step ? AppColors.primary : AppColors.surfaceBorder,
+                color: i <= step ? theme.colorScheme.primary : (theme.dividerTheme.color ?? AppColors.surfaceBorder),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -266,32 +286,34 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
   }
 
   Widget _buildEmpty() {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 64, height: 64,
-            decoration: const BoxDecoration(
-              color: AppColors.primaryLight, shape: BoxShape.circle),
-            child: const Icon(Icons.free_breakfast_outlined,
-                size: 28, color: AppColors.primary),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withAlpha(20), shape: BoxShape.circle),
+            child: Icon(Icons.free_breakfast_outlined,
+                size: 28, color: theme.colorScheme.primary),
           ),
           const SizedBox(height: 16),
           Text('Free day',
               style: GoogleFonts.outfit(
                   fontSize: 17, fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary)),
+                  color: theme.colorScheme.onSurface)),
           const SizedBox(height: 4),
           Text('Tap "+ Add class" to add one',
               style: GoogleFonts.outfit(
-                  fontSize: 13, color: AppColors.textTertiary)),
+                  fontSize: 13, color: theme.colorScheme.onSurface.withAlpha(140))),
         ],
       ),
     );
   }
 
   Widget _buildAddButton(int day) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: GestureDetector(
@@ -300,19 +322,19 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.primaryLight,
+            color: theme.colorScheme.primary.withAlpha(20),
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.primary.withAlpha(60)),
+            border: Border.all(color: theme.colorScheme.primary.withAlpha(60)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
+              Icon(Icons.add_rounded, size: 18, color: theme.colorScheme.primary),
               const SizedBox(width: 6),
               Text('+ Add class',
                   style: GoogleFonts.outfit(
                       fontSize: 14, fontWeight: FontWeight.w600,
-                      color: AppColors.primary)),
+                      color: theme.colorScheme.primary)),
             ],
           ),
         ),
@@ -321,11 +343,12 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
   }
 
   Widget _buildNavBar(int dayIdx, bool isLast) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.surfaceBorder)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(top: BorderSide(color: theme.dividerTheme.color ?? AppColors.surfaceBorder)),
       ),
       child: Row(
         children: [
@@ -333,10 +356,10 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
             OutlinedButton.icon(
               onPressed: () => setState(() => _step--),
               icon: const Icon(Icons.arrow_back_rounded, size: 16),
-              label: const Text('Back'),
+              label: Text('Back'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
-                side: const BorderSide(color: AppColors.surfaceBorder),
+                foregroundColor: theme.colorScheme.onSurface.withAlpha(200),
+                side: BorderSide(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
                 padding: const EdgeInsets.symmetric(
                     horizontal: 18, vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -354,7 +377,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
                 ? 'Review & Save'
                 : 'Next: ${_dayNames[dayIdx + 1]}'),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: theme.colorScheme.primary,
               padding: const EdgeInsets.symmetric(
                   horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -370,8 +393,9 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
   // ── Confirm screen ────────────────────────────────────────────────────────
 
   Widget _buildConfirmScreen() {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,12 +406,12 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
                 GestureDetector(
                   onTap: () => setState(() => _step--),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.arrow_back_rounded,
-                        color: AppColors.textSecondary, size: 18),
+                    Icon(Icons.arrow_back_rounded,
+                        color: theme.colorScheme.onSurface.withAlpha(200), size: 18),
                     const SizedBox(width: 4),
                     Text('Back',
                         style: GoogleFonts.outfit(
-                            color: AppColors.textSecondary,
+                            color: theme.colorScheme.onSurface.withAlpha(200),
                             fontWeight: FontWeight.w500)),
                   ]),
                 ),
@@ -395,7 +419,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
                 Text('Review Schedule',
                     style: GoogleFonts.outfit(
                         fontSize: 20, fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary)),
+                        color: theme.colorScheme.onSurface)),
               ]),
             ),
             Expanded(
@@ -403,7 +427,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
                   ? Center(
                       child: Text('No classes to import',
                           style: GoogleFonts.outfit(
-                              color: AppColors.textTertiary)))
+                              color: theme.colorScheme.onSurface.withAlpha(140))))
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                       children: [
@@ -416,7 +440,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
                                   style: GoogleFonts.outfit(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.primary)),
+                                      color: theme.colorScheme.primary)),
                             ),
                             ..._forDay(d + 1).map((e) => _ConfirmRow(entry: e)),
                           ],
@@ -425,7 +449,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
                         Text(
                           '${_entries.length} class${_entries.length == 1 ? '' : 'es'} total',
                           style: GoogleFonts.outfit(
-                              fontSize: 13, color: AppColors.textTertiary),
+                              fontSize: 13, color: theme.colorScheme.onSurface.withAlpha(140)),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -433,10 +457,10 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
             ),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
                 border:
-                    Border(top: BorderSide(color: AppColors.surfaceBorder)),
+                    Border(top: BorderSide(color: theme.dividerTheme.color ?? AppColors.surfaceBorder)),
               ),
               child: SizedBox(
                 width: double.infinity,
@@ -446,13 +470,13 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
                       ? null
                       : () => Navigator.pop(context, _buildResult()),
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: theme.colorScheme.primary,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.lg)),
                     textStyle:
                         GoogleFonts.outfit(fontWeight: FontWeight.w700),
                   ),
-                  child: const Text('Save Schedule'),
+                  child: Text('Save Schedule'),
                 ),
               ),
             ),
@@ -485,6 +509,7 @@ class _EntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = Color(entry.colorValue);
     return Dismissible(
       key: ValueKey(entry.key),
@@ -505,9 +530,9 @@ class _EntryCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.surfaceBorder),
+          border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
           boxShadow: const [
             BoxShadow(
                 color: Color(0x08000000),
@@ -556,16 +581,16 @@ class _EntryCard extends StatelessWidget {
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                               color: entry.name.isEmpty
-                                  ? AppColors.textTertiary
-                                  : AppColors.textPrimary,
+                                  ? theme.colorScheme.onSurface.withAlpha(140)
+                                  : theme.colorScheme.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.edit_outlined,
-                            size: 13, color: AppColors.textTertiary),
+                        Icon(Icons.edit_outlined,
+                            size: 13, color: theme.colorScheme.onSurface.withAlpha(140)),
                       ]),
                     ),
                     const SizedBox(height: 5),
@@ -573,20 +598,20 @@ class _EntryCard extends StatelessWidget {
                     GestureDetector(
                       onTap: onPickTime,
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.schedule_outlined,
-                            size: 13, color: AppColors.textTertiary),
+                        Icon(Icons.schedule_outlined,
+                            size: 13, color: theme.colorScheme.onSurface.withAlpha(140)),
                         const SizedBox(width: 4),
                         Text(
                           '${_fmt(entry.startHour, entry.startMinute)} – ${_fmt(entry.endHour, entry.endMinute)}',
                           style: GoogleFonts.outfit(
                             fontSize: 13,
-                            color: AppColors.textSecondary,
+                            color: theme.colorScheme.onSurface.withAlpha(200),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.edit_outlined,
-                            size: 11, color: AppColors.textTertiary),
+                        Icon(Icons.edit_outlined,
+                            size: 11, color: theme.colorScheme.onSurface.withAlpha(140)),
                       ]),
                     ),
                   ],
@@ -596,10 +621,10 @@ class _EntryCard extends StatelessWidget {
             // Delete button
             GestureDetector(
               onTap: onDelete,
-              child: const Padding(
-                padding: EdgeInsets.all(12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
                 child: Icon(Icons.close_rounded,
-                    size: 18, color: AppColors.textTertiary),
+                    size: 18, color: theme.colorScheme.onSurface.withAlpha(140)),
               ),
             ),
           ],
@@ -627,12 +652,13 @@ class _NameEditSheet extends StatefulWidget {
 class _NameEditSheetState extends State<_NameEditSheet> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottom),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -642,7 +668,7 @@ class _NameEditSheetState extends State<_NameEditSheet> {
             child: Container(
               width: 36, height: 4,
               decoration: BoxDecoration(
-                color: AppColors.surfaceBorder,
+                color: theme.dividerTheme.color ?? AppColors.surfaceBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -651,38 +677,38 @@ class _NameEditSheetState extends State<_NameEditSheet> {
           Text('Subject name',
               style: GoogleFonts.outfit(
                   fontSize: 16, fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
+                  color: theme.colorScheme.onSurface)),
           const SizedBox(height: 12),
           TextField(
             controller: widget.controller,
             autofocus: true,
             onChanged: (_) => setState(() {}),
             style: GoogleFonts.outfit(
-                fontSize: 15, color: AppColors.textPrimary),
+                fontSize: 15, color: theme.colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'e.g. Matematică',
-              hintStyle: GoogleFonts.outfit(color: AppColors.textTertiary),
+              hintStyle: GoogleFonts.outfit(color: theme.colorScheme.onSurface.withAlpha(140)),
               filled: true,
-              fillColor: AppColors.bgSurface,
+              fillColor: theme.colorScheme.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: AppColors.surfaceBorder),
+                borderSide: BorderSide(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: AppColors.surfaceBorder),
+                borderSide: BorderSide(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide:
-                    BorderSide(color: AppColors.primary.withAlpha(150)),
+                    BorderSide(color: theme.colorScheme.primary.withAlpha(150)),
               ),
               contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14, vertical: 12),
               suffixIcon: widget.controller.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 18),
-                      color: AppColors.textTertiary,
+                      color: theme.colorScheme.onSurface.withAlpha(140),
                       onPressed: () {
                         widget.controller.clear();
                         setState(() {});
@@ -695,7 +721,7 @@ class _NameEditSheetState extends State<_NameEditSheet> {
           Text('Suggestions',
               style: GoogleFonts.outfit(
                   fontSize: 13, fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary)),
+                  color: theme.colorScheme.onSurface.withAlpha(200))),
           const SizedBox(height: 8),
           SizedBox(
             height: 38,
@@ -718,20 +744,20 @@ class _NameEditSheetState extends State<_NameEditSheet> {
                         horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
                       color: selected
-                          ? AppColors.primary
-                          : AppColors.primaryLight,
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.primary.withAlpha(20),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: selected
-                            ? AppColors.primary
-                            : AppColors.primary.withAlpha(60),
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.primary.withAlpha(60),
                       ),
                     ),
                     child: Text(
                       s,
                       style: GoogleFonts.outfit(
                         fontSize: 13, fontWeight: FontWeight.w500,
-                        color: selected ? Colors.white : AppColors.primary,
+                        color: selected ? Colors.white : theme.colorScheme.primary,
                       ),
                     ),
                   ),
@@ -747,12 +773,12 @@ class _NameEditSheetState extends State<_NameEditSheet> {
               onPressed: () =>
                   Navigator.pop(context, widget.controller.text),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: theme.colorScheme.primary,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.lg)),
                 textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
               ),
-              child: const Text('Done'),
+              child: Text('Done'),
             ),
           ),
         ],
@@ -772,13 +798,14 @@ class _ConfirmRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.fromLTRB(12, 10, 16, 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
       ),
       child: Row(
         children: [
@@ -793,13 +820,13 @@ class _ConfirmRow extends StatelessWidget {
               entry.name.isEmpty ? 'Unknown' : entry.name,
               style: GoogleFonts.outfit(
                   fontSize: 14, fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary),
+                  color: theme.colorScheme.onSurface),
             ),
           ),
           Text(
             '${_fmt(entry.startHour, entry.startMinute)} – ${_fmt(entry.endHour, entry.endMinute)}',
             style: GoogleFonts.outfit(
-                fontSize: 12, color: AppColors.textTertiary,
+                fontSize: 12, color: theme.colorScheme.onSurface.withAlpha(140),
                 fontWeight: FontWeight.w500),
           ),
         ],

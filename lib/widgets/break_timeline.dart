@@ -17,11 +17,12 @@ class BreakTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     if (breaks.isEmpty) {
       return Center(
         child: Text(
           'No breaks scheduled',
-          style: GoogleFonts.outfit(color: AppColors.textTertiary),
+          style: GoogleFonts.outfit(color: theme.colorScheme.onSurface.withAlpha(120)),
         ),
       );
     }
@@ -56,7 +57,7 @@ class BreakTimeline extends StatelessWidget {
                           width: 2,
                           color: isPast
                               ? accentColor.withAlpha(40)
-                              : AppColors.surfaceBorder,
+                              : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
                         ),
                       ),
                   ],
@@ -121,10 +122,10 @@ class _TimelineDot extends StatelessWidget {
       height: 10,
       margin: const EdgeInsets.only(top: 7, left: 15),
       decoration: BoxDecoration(
-        color: isPast ? accentColor.withAlpha(100) : AppColors.surfaceBorder,
+        color: isPast ? accentColor.withAlpha(100) : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
         shape: BoxShape.circle,
         border: Border.all(
-          color: isPast ? accentColor.withAlpha(60) : AppColors.surfaceBorder,
+          color: isPast ? accentColor.withAlpha(60) : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
         ),
       ),
     );
@@ -146,6 +147,7 @@ class _BreakCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final fmt = DateFormat('d MMM');
     final dateRange =
         '${fmt.format(breakItem.startDate)} – ${fmt.format(breakItem.endDate)}';
@@ -158,12 +160,12 @@ class _BreakCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isActive
             ? accentColor.withAlpha(20)
-            : (isPast ? AppColors.scaffoldBg : Colors.white),
+            : (isPast ? Theme.of(context).scaffoldBackgroundColor : Theme.of(context).colorScheme.surface),
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: isActive
               ? accentColor.withAlpha(80)
-              : AppColors.surfaceBorder,
+              : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
         ),
       ),
       child: Row(
@@ -178,8 +180,8 @@ class _BreakCard extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: isPast
-                        ? AppColors.textTertiary
-                        : AppColors.textPrimary,
+                        ? Theme.of(context).colorScheme.onSurface.withAlpha(140)
+                        : Theme.of(context).colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -189,7 +191,7 @@ class _BreakCard extends StatelessWidget {
                   dateRange,
                   style: GoogleFonts.outfit(
                     fontSize: 12,
-                    color: AppColors.textTertiary,
+                    color: theme.colorScheme.onSurface.withAlpha(120),
                   ),
                 ),
               ],
@@ -222,6 +224,7 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     if (isActive) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -245,7 +248,7 @@ class _StatusBadge extends StatelessWidget {
         '${breakItem.durationDays}d',
         style: GoogleFonts.outfit(
           fontSize: 12,
-          color: AppColors.textTertiary,
+          color: theme.colorScheme.onSurface.withAlpha(120),
         ),
       );
     }
@@ -254,7 +257,7 @@ class _StatusBadge extends StatelessWidget {
       'in ${daysAway}d',
       style: GoogleFonts.outfit(
         fontSize: 12,
-        color: AppColors.textSecondary,
+        color: theme.colorScheme.onSurface.withAlpha(180),
       ),
     );
   }

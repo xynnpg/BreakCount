@@ -27,6 +27,7 @@ class ExamSubjectPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -50,7 +51,7 @@ class ExamSubjectPicker extends StatelessWidget {
                       color: sel ? subjectColor.withAlpha(18) : Colors.white,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: sel ? subjectColor : AppColors.surfaceBorder,
+                        color: sel ? subjectColor : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
                       ),
                     ),
                     child: Row(
@@ -69,7 +70,7 @@ class ExamSubjectPicker extends StatelessWidget {
                             fontSize: 13,
                             color: sel
                                 ? subjectColor
-                                : AppColors.textSecondary,
+                                : Theme.of(context).colorScheme.onSurface.withAlpha(200),
                             fontWeight:
                                 sel ? FontWeight.w600 : FontWeight.w400,
                           ),
@@ -89,15 +90,15 @@ class ExamSubjectPicker extends StatelessWidget {
               Text(
                 selectedName,
                 style: GoogleFonts.outfit(
-                    fontSize: 13, color: AppColors.textSecondary),
+                    fontSize: 13, color: theme.colorScheme.onSurface.withAlpha(180)),
               ),
               const SizedBox(width: 6),
               ExamTypeBadge(label: importanceLabel, color: importanceColor),
               const Spacer(),
               GestureDetector(
                 onTap: onClear,
-                child: const Icon(Icons.close_rounded,
-                    size: 16, color: AppColors.textTertiary),
+                child: Icon(Icons.close_rounded,
+                    size: 16, color: theme.colorScheme.onSurface.withAlpha(120)),
               ),
             ],
           ),
@@ -142,7 +143,7 @@ class ExamTypePicker extends StatelessWidget {
                       border: Border.all(
                         color: sel
                             ? AppColors.primary
-                            : AppColors.surfaceBorder,
+                            : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
                       ),
                     ),
                     child: Text(
@@ -151,7 +152,7 @@ class ExamTypePicker extends StatelessWidget {
                         fontSize: 13,
                         color: sel
                             ? AppColors.primary
-                            : AppColors.textSecondary,
+                            : Theme.of(context).colorScheme.onSurface.withAlpha(200),
                         fontWeight:
                             sel ? FontWeight.w600 : FontWeight.w400,
                       ),
@@ -175,11 +176,12 @@ class ExamFormLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Text(
       text,
       style: GoogleFonts.outfit(
         fontSize: 11,
-        color: AppColors.textTertiary,
+        color: theme.colorScheme.onSurface.withAlpha(120),
         fontWeight: FontWeight.w600,
         letterSpacing: 1.2,
       ),
@@ -205,6 +207,7 @@ class ExamFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -214,7 +217,7 @@ class ExamFormField extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.surfaceBorder),
+            border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
           ),
           child: Row(
             children: [
@@ -223,11 +226,11 @@ class ExamFormField extends StatelessWidget {
                   controller: controller,
                   onChanged: onChanged,
                   style: GoogleFonts.outfit(
-                      color: AppColors.textPrimary, fontSize: 14),
+                      color: theme.colorScheme.onSurface, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: hint,
                     hintStyle: GoogleFonts.outfit(
-                        color: AppColors.textTertiary, fontSize: 14),
+                        color: theme.colorScheme.onSurface.withAlpha(120), fontSize: 14),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 13),

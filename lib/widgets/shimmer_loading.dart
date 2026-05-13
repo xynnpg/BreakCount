@@ -54,10 +54,10 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
             gradient: LinearGradient(
               begin: Alignment(_animation.value - 0.5, 0),
               end: Alignment(_animation.value + 0.5, 0),
-              colors: const [
-                AppColors.bgSurface,
+              colors: [
+                Theme.of(context).colorScheme.surface,
                 Color(0xFFEDD9C8),
-                AppColors.bgSurface,
+                Theme.of(context).colorScheme.surface,
               ],
             ),
           ),

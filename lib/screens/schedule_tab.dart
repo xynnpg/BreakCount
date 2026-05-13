@@ -188,10 +188,11 @@ class _ScheduleTabState extends State<ScheduleTab>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     super.build(context);
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           Column(
@@ -263,7 +264,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(AppRadius.xl),
-                    border: Border.all(color: AppColors.surfaceBorder),
+                    border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
                     boxShadow: const [
                       BoxShadow(
                           color: Color(0x14000000),
@@ -274,11 +275,11 @@ class _ScheduleTabState extends State<ScheduleTab>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const SizedBox(
+                      SizedBox(
                         width: 36,
                         height: 36,
                         child: CircularProgressIndicator(
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                           strokeWidth: 2.5,
                         ),
                       ),
@@ -288,7 +289,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                         style: GoogleFonts.outfit(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
@@ -296,7 +297,7 @@ class _ScheduleTabState extends State<ScheduleTab>
                         'AI is reading your timetable',
                         style: GoogleFonts.outfit(
                           fontSize: 12,
-                          color: AppColors.textTertiary,
+                          color: theme.colorScheme.onSurface.withAlpha(120),
                         ),
                       ),
                     ],

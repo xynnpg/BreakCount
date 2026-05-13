@@ -10,6 +10,7 @@ class SettingsSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(
           left: AppSpacing.xs, bottom: AppSpacing.sm, top: 6),
@@ -18,7 +19,7 @@ class SettingsSectionLabel extends StatelessWidget {
         style: GoogleFonts.outfit(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: AppColors.textTertiary,
+          color: theme.colorScheme.onSurface.withAlpha(120),
           letterSpacing: 2.0,
         ),
       ),
@@ -48,11 +49,12 @@ class SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.lg),
-      splashColor: AppColors.primary.withAlpha(12),
-      highlightColor: AppColors.primary.withAlpha(6),
+      splashColor: theme.colorScheme.primary.withAlpha(12),
+      highlightColor: theme.colorScheme.primary.withAlpha(6),
       child: Padding(
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: 14),
@@ -62,14 +64,10 @@ class SettingsRow extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFFDF0E6), AppColors.primaryLight],
-                ),
+                color: theme.colorScheme.primary.withAlpha(18),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, size: 18, color: AppColors.primary),
+              child: Icon(icon, size: 18, color: theme.colorScheme.primary),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -80,7 +78,7 @@ class SettingsRow extends StatelessWidget {
                     label,
                     style: GoogleFonts.outfit(
                       fontSize: 14,
-                      color: labelColor ?? AppColors.textPrimary,
+                      color: labelColor ?? theme.colorScheme.onSurface,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -88,7 +86,7 @@ class SettingsRow extends StatelessWidget {
                     Text(
                       subtitle!,
                       style: GoogleFonts.outfit(
-                          fontSize: 12, color: AppColors.textTertiary),
+                          fontSize: 12, color: theme.colorScheme.onSurface.withAlpha(120)),
                     ),
                 ],
               ),
@@ -108,11 +106,11 @@ class SettingsRowDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(
+    return Divider(
       height: 0.5,
       indent: 64,
       endIndent: 0,
-      color: AppColors.surfaceBorder,
+      color: Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder,
     );
   }
 }

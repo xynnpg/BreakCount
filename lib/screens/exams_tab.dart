@@ -70,16 +70,17 @@ class _ExamsTabState extends State<ExamsTab> {
   }
 
   Future<void> _delete(Exam exam) async {
+    final theme = Theme.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete exam?'),
+        title: Text('Delete exam?'),
         content: Text(exam.title),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text('Cancel',
-                style: GoogleFonts.outfit(color: AppColors.textTertiary)),
+                style: GoogleFonts.outfit(color: theme.colorScheme.onSurface.withAlpha(120))),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -98,8 +99,9 @@ class _ExamsTabState extends State<ExamsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -119,7 +121,7 @@ class _ExamsTabState extends State<ExamsTab> {
                             style: GoogleFonts.outfit(
                               fontSize: 28,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              color: theme.colorScheme.onSurface,
                               letterSpacing: -0.8,
                             ),
                           ),
@@ -127,7 +129,7 @@ class _ExamsTabState extends State<ExamsTab> {
                             'Tests & Assessments',
                             style: GoogleFonts.outfit(
                               fontSize: 13,
-                              color: AppColors.textTertiary,
+                              color: theme.colorScheme.onSurface.withAlpha(120),
                               fontWeight: FontWeight.w400,
                             ),
                           ),
@@ -136,7 +138,7 @@ class _ExamsTabState extends State<ExamsTab> {
                               '${_upcoming.length} upcoming',
                               style: GoogleFonts.outfit(
                                 fontSize: 11,
-                                color: AppColors.primary,
+                                color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -149,11 +151,11 @@ class _ExamsTabState extends State<ExamsTab> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withAlpha(60),
+                              color: theme.colorScheme.primary.withAlpha(60),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -182,7 +184,7 @@ class _ExamsTabState extends State<ExamsTab> {
                       child: Text(
                         'No upcoming exams',
                         style: GoogleFonts.outfit(
-                            color: AppColors.textTertiary, fontSize: 14),
+                            color: theme.colorScheme.onSurface.withAlpha(120), fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -203,9 +205,9 @@ class _ExamsTabState extends State<ExamsTab> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: theme.colorScheme.surface,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.surfaceBorder),
+                          border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -213,7 +215,7 @@ class _ExamsTabState extends State<ExamsTab> {
                             Text(
                               'Past (${_past.length})',
                               style: GoogleFonts.outfit(
-                                  color: AppColors.textSecondary,
+                                  color: theme.colorScheme.onSurface.withAlpha(180),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500),
                             ),
@@ -222,7 +224,7 @@ class _ExamsTabState extends State<ExamsTab> {
                               _showPast
                                   ? Icons.keyboard_arrow_up_rounded
                                   : Icons.keyboard_arrow_down_rounded,
-                              color: AppColors.textTertiary,
+                              color: theme.colorScheme.onSurface.withAlpha(120),
                               size: 18,
                             ),
                           ],
@@ -257,6 +259,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -264,12 +267,12 @@ class _EmptyState extends StatelessWidget {
           Container(
             width: 72,
             height: 72,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.primaryLight,
+              color: theme.colorScheme.primary.withAlpha(20),
             ),
-            child: const Icon(Icons.event_note_outlined,
-                size: 32, color: AppColors.primary),
+            child: Icon(Icons.event_note_outlined,
+                size: 32, color: theme.colorScheme.primary),
           ),
           const SizedBox(height: 20),
           Text(
@@ -277,13 +280,13 @@ class _EmptyState extends StatelessWidget {
             style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary),
+                color: theme.colorScheme.onSurface),
           ),
           const SizedBox(height: 6),
           Text(
             'Nothing coming up. Enjoy it while it lasts.',
             style: GoogleFonts.outfit(
-                fontSize: 13, color: AppColors.textTertiary),
+                fontSize: 13, color: theme.colorScheme.onSurface.withAlpha(120)),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 28),
@@ -293,7 +296,7 @@ class _EmptyState extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: theme.colorScheme.primary,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Text(

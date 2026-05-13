@@ -1,9 +1,16 @@
+import 'dart:ui';
+
 import 'package:home_widget/home_widget.dart';
 
 import '../app/constants.dart';
+import '../app/theme_preset.dart';
+import '../data/achievements_data.dart';
+import '../data/personas_data.dart';
 import '../models/schedule.dart';
 import '../models/subject.dart';
 import '../models/school_year.dart';
+import 'achievement_service.dart';
+import 'mood_service.dart';
 import 'school_data_service.dart';
 import 'schedule_service.dart';
 import 'storage_service.dart';
@@ -84,19 +91,85 @@ class WidgetService {
         isOnBreak: isOnBreak,
       );
 
+      // ── Persona + achievement + mood streak ──────────────────────────────
+      final personaId =
+          StorageService.getString(StorageKeys.widgetPersona) ?? 'hype';
+      final persona = personaById(personaId);
+      final fireStreak = MoodService.currentStreak(MoodKind.fire);
+      final unlockedCount = AchievementService.allUnlocks.length;
+      // Latest unlock (if any, within the last 48h for the "fresh" badge).
+      AchievementUnlock? latest;
+      for (final u in AchievementService.allUnlocks) {
+        if (latest == null || u.unlockedAt.isAfter(latest.unlockedAt)) {
+          latest = u;
+        }
+      }
+      String latestName = '';
+      String latestIconName = '';
+      if (latest != null &&
+          DateTime.now().difference(latest.unlockedAt).inHours < 48) {
+        final ach = kAchievements
+            .where((a) => a.id == latest!.id)
+            .firstOrNull;
+        if (ach != null) {
+          latestName = ach.name;
+          latestIconName = ach.icon.fontFamily ?? '';
+        }
+      }
+
+      // If we have a fresh achievement, surface it over the vibe_copy.
+      // Else if we have a fire streak ≥2, append a compact badge to vibe_copy.
+      String effectiveCopy = vibeData['copy']!;
+      if (latestName.isNotEmpty) {
+        effectiveCopy = '🏆 $latestName';
+      } else if (fireStreak >= 2) {
+        effectiveCopy = '$effectiveCopy · 🔥$fireStreak';
+      }
+
       // ── Save to HomeWidget SharedPreferences ──────────────────────────────
       await HomeWidget.saveWidgetData<int>('days_until_break', daysUntilBreak);
       await HomeWidget.saveWidgetData<String>('next_break_name', nextBreakName);
       await HomeWidget.saveWidgetData<int>('year_progress', yearProgress);
       await HomeWidget.saveWidgetData<int>('days_until_summer', daysUntilSummer);
       await HomeWidget.saveWidgetData<bool>('is_on_break', isOnBreak);
-      await HomeWidget.saveWidgetData<String>('vibe_emoji', vibeData['emoji']!);
-      await HomeWidget.saveWidgetData<String>('vibe_copy', vibeData['copy']!);
+      // Persona emoji overrides mood emoji when the user has explicitly picked
+      // a persona — keeps the widget identity consistent with the app.
+      await HomeWidget.saveWidgetData<String>(
+          'vibe_emoji', persona.emoji);
+      await HomeWidget.saveWidgetData<String>('vibe_copy', effectiveCopy);
       await HomeWidget.saveWidgetData<String>('vibe_season', vibeData['season']!);
       await HomeWidget.saveWidgetData<String?>('current_class', currentClass);
       await HomeWidget.saveWidgetData<String?>('current_class_time', currentClassTime);
       await HomeWidget.saveWidgetData<String?>('next_class', nextClass);
       await HomeWidget.saveWidgetData<String?>('next_class_time', nextClassTime);
+      // New persona / achievement / streak fields — consumed by future layout
+      // updates + web manifest theming.
+      await HomeWidget.saveWidgetData<String>(
+          'persona_emoji', persona.emoji);
+      await HomeWidget.saveWidgetData<String>(
+          'persona_tint_hex',
+          '#${persona.tint.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}');
+      await HomeWidget.saveWidgetData<int>('mood_streak_days', fireStreak);
+      await HomeWidget.saveWidgetData<String>(
+          'latest_achievement_name', latestName);
+      await HomeWidget.saveWidgetData<String>(
+          'latest_achievement_icon', latestIconName);
+      await HomeWidget.saveWidgetData<int>(
+          'unlocked_count', unlockedCount);
+
+      // Theme colors — home-screen widget follows app theme in v2.1.0+.
+      final theme = AppThemeController.current;
+      String toHex(Color c) =>
+          '#${c.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+      await HomeWidget.saveWidgetData<String>(
+          'theme_bg_hex', toHex(theme.bgDeep));
+      await HomeWidget.saveWidgetData<String>(
+          'theme_surface_hex', toHex(theme.bgSurface));
+      await HomeWidget.saveWidgetData<String>(
+          'theme_primary_hex', toHex(theme.primary));
+      await HomeWidget.saveWidgetData<String>(
+          'theme_border_hex', toHex(theme.surfaceBorder));
+      await HomeWidget.saveWidgetData<bool>('theme_dark', theme.dark);
 
       // ── Trigger redraws ───────────────────────────────────────────────────
       await HomeWidget.updateWidget(

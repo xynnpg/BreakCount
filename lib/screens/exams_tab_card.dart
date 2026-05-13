@@ -17,7 +17,7 @@ extension ImportanceStyling on SubjectImportance {
       case SubjectImportance.medium:
         return AppColors.primary;
       case SubjectImportance.low:
-        return AppColors.textTertiary;
+        return const Color(0xFFA89888);
     }
   }
 }
@@ -63,7 +63,8 @@ class ExamCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isPast ? AppColors.textTertiary : importance.color;
+    final theme = Theme.of(context);
+    final color = isPast ? Theme.of(context).colorScheme.onSurface.withAlpha(140) : importance.color;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -109,8 +110,8 @@ class ExamCard extends StatelessWidget {
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
                                     color: isPast
-                                        ? AppColors.textTertiary
-                                        : AppColors.textPrimary,
+                                        ? Theme.of(context).colorScheme.onSurface.withAlpha(140)
+                                        : Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                               if (exam.title.isNotEmpty &&
@@ -124,10 +125,10 @@ class ExamCard extends StatelessWidget {
                                         ? FontWeight.w400
                                         : FontWeight.w700,
                                     color: isPast
-                                        ? AppColors.textTertiary
+                                        ? Theme.of(context).colorScheme.onSurface.withAlpha(140)
                                         : (exam.subjectName != null
-                                            ? AppColors.textSecondary
-                                            : AppColors.textPrimary),
+                                            ? Theme.of(context).colorScheme.onSurface.withAlpha(200)
+                                            : Theme.of(context).colorScheme.onSurface),
                                   ),
                                 ),
                               const SizedBox(height: 6),
@@ -140,7 +141,7 @@ class ExamCard extends StatelessWidget {
                                     _dateLabel,
                                     style: GoogleFonts.outfit(
                                       fontSize: 11,
-                                      color: AppColors.textTertiary,
+                                      color: theme.colorScheme.onSurface.withAlpha(120),
                                     ),
                                   ),
                                   if (exam.date.hour != 0 ||
@@ -150,20 +151,20 @@ class ExamCard extends StatelessWidget {
                                       '${exam.date.hour.toString().padLeft(2, '0')}:${exam.date.minute.toString().padLeft(2, '0')}',
                                       style: GoogleFonts.outfit(
                                           fontSize: 11,
-                                          color: AppColors.textTertiary),
+                                          color: theme.colorScheme.onSurface.withAlpha(120)),
                                     ),
                                   ],
                                   if (exam.room != null &&
                                       exam.room!.isNotEmpty) ...[
                                     const SizedBox(width: 5),
-                                    const Icon(Icons.room_outlined,
+                                    Icon(Icons.room_outlined,
                                         size: 11,
-                                        color: AppColors.textTertiary),
+                                        color: theme.colorScheme.onSurface.withAlpha(120)),
                                     Text(
                                       exam.room!,
                                       style: GoogleFonts.outfit(
                                           fontSize: 11,
-                                          color: AppColors.textTertiary),
+                                          color: theme.colorScheme.onSurface.withAlpha(120)),
                                     ),
                                   ],
                                 ],
@@ -217,7 +218,7 @@ class ExamCard extends StatelessWidget {
                                       child: Icon(
                                           Icons.calendar_month_outlined,
                                           size: 16,
-                                          color: AppColors.primary
+                                          color: theme.colorScheme.primary
                                               .withAlpha(160)),
                                     ),
                                   ),
@@ -227,7 +228,7 @@ class ExamCard extends StatelessWidget {
                                     padding: const EdgeInsets.all(4),
                                     child: Icon(Icons.edit_outlined,
                                         size: 16,
-                                        color: AppColors.textTertiary),
+                                        color: theme.colorScheme.onSurface.withAlpha(120)),
                                   ),
                                 ),
                                 GestureDetector(

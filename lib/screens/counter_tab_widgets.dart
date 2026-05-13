@@ -97,6 +97,7 @@ class CounterStatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Expanded(
       child: Column(
         children: [
@@ -105,7 +106,7 @@ class CounterStatItem extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 28,
               fontWeight: FontWeight.w700,
-              color: valueColor ?? AppColors.textPrimary,
+              color: valueColor ?? theme.colorScheme.onSurface,
               height: 1,
             ),
           ),
@@ -113,14 +114,14 @@ class CounterStatItem extends StatelessWidget {
           Text(
             unit,
             style: GoogleFonts.outfit(
-                fontSize: 10, color: AppColors.textTertiary),
+                fontSize: 10, color: theme.colorScheme.onSurface.withAlpha(120)),
           ),
           const SizedBox(height: 3),
           Text(
             label,
             style: GoogleFonts.outfit(
               fontSize: 11,
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurface.withAlpha(180),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -136,16 +137,17 @@ class CounterGradientDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final border = Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder;
     return Container(
       height: 44,
       width: 1,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
             Colors.transparent,
-            AppColors.surfaceBorder,
+            border,
             Colors.transparent,
           ],
         ),
@@ -171,6 +173,7 @@ class CounterStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     String label;
     Color color;
     Color bgColor;
@@ -181,16 +184,16 @@ class CounterStatusBadge extends StatelessWidget {
       bgColor = AppColors.success.withAlpha(10);
     } else if (onBreak) {
       label = '${activeBreakName ?? 'Break'} — enjoy it!';
-      color = AppColors.primary;
-      bgColor = AppColors.primary.withAlpha(12);
+      color = theme.colorScheme.primary;
+      bgColor = theme.colorScheme.primary.withAlpha(12);
     } else if (next != null) {
       label = 'Until ${next!.name}';
-      color = AppColors.textSecondary;
-      bgColor = Colors.white;
+      color = theme.colorScheme.onSurface.withAlpha(180);
+      bgColor = theme.colorScheme.surface;
     } else {
       label = 'Until end of school year';
-      color = AppColors.textSecondary;
-      bgColor = Colors.white;
+      color = theme.colorScheme.onSurface.withAlpha(180);
+      bgColor = theme.colorScheme.surface;
     }
 
     return Container(
@@ -199,8 +202,8 @@ class CounterStatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.full),
         border: Border.all(
           color: onBreak
-              ? AppColors.primary.withAlpha(40)
-              : AppColors.surfaceBorder,
+              ? theme.colorScheme.primary.withAlpha(40)
+              : theme.dividerTheme.color ?? AppColors.surfaceBorder,
         ),
         color: bgColor,
         boxShadow: const [AppElevation.low],

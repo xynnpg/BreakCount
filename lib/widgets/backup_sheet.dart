@@ -30,6 +30,7 @@ class BackupSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
       child: Column(
@@ -41,7 +42,7 @@ class BackupSheet extends StatelessWidget {
               width: 32,
               height: 3,
               decoration: BoxDecoration(
-                color: AppColors.surfaceBorder,
+                color: theme.dividerTheme.color ?? AppColors.surfaceBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -52,7 +53,7 @@ class BackupSheet extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
           ),
@@ -61,7 +62,7 @@ class BackupSheet extends StatelessWidget {
             'Your schedule, exams, and settings are saved to your private app data folder in Google Drive.',
             style: GoogleFonts.outfit(
               fontSize: 13,
-              color: AppColors.textTertiary,
+              color: theme.colorScheme.onSurface.withAlpha(120),
               height: 1.5,
             ),
           ),
@@ -144,7 +145,7 @@ class BackupSheet extends StatelessWidget {
                 child: Text(
                   'Sign Out',
                   style: GoogleFonts.outfit(
-                      color: AppColors.textTertiary, fontSize: 13),
+                      color: theme.colorScheme.onSurface.withAlpha(120), fontSize: 13),
                 ),
               ),
             ),
@@ -189,14 +190,15 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
-        Icon(icon, size: 15, color: AppColors.textTertiary),
+        Icon(icon, size: 15, color: theme.colorScheme.onSurface.withAlpha(120)),
         const SizedBox(width: 6),
         Expanded(
           child: Text(text,
               style: GoogleFonts.outfit(
-                  fontSize: 13, color: AppColors.textSecondary)),
+                  fontSize: 13, color: theme.colorScheme.onSurface.withAlpha(180))),
         ),
       ],
     );
@@ -220,6 +222,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final shape = RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12));
     final indicator = const SizedBox(
@@ -253,7 +256,7 @@ class _ActionButton extends StatelessWidget {
                       fontSize: 13,
                       color: AppColors.primary)),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.surfaceBorder),
+                side: BorderSide(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
                 shape: shape,
               ),
             ),

@@ -179,6 +179,7 @@ class _SchoolTimePanelState extends State<SchoolTimePanel>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: _cycleMode,
       child: Container(
@@ -209,7 +210,7 @@ class _SchoolTimePanelState extends State<SchoolTimePanel>
               style: GoogleFonts.outfit(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textTertiary,
+                color: theme.colorScheme.onSurface.withAlpha(120),
                 letterSpacing: 1.2,
               ),
             ),
@@ -259,19 +260,19 @@ class _SchoolTimePanelState extends State<SchoolTimePanel>
                     _modeLabel,
                     style: GoogleFonts.outfit(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: theme.colorScheme.onSurface.withAlpha(180),
                     ),
                   ),
                 ),
                 const SizedBox(width: 4),
                 Icon(Icons.touch_app_outlined,
-                    size: 13, color: AppColors.textTertiary),
+                    size: 13, color: theme.colorScheme.onSurface.withAlpha(120)),
                 const SizedBox(width: 3),
                 Text(
                   'tap',
                   style: GoogleFonts.outfit(
                     fontSize: 11,
-                    color: AppColors.textTertiary,
+                    color: theme.colorScheme.onSurface.withAlpha(120),
                   ),
                 ),
               ],

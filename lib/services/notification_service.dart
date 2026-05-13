@@ -492,6 +492,60 @@ class NotificationService {
     }
   }
 
+  // ------------------------------------------------- weekly vibe recap ------
+
+  /// Schedules a repeating weekly notification on Sunday 19:00 local time
+  /// with [body] as its content. Replaces any prior schedule.
+  ///
+  /// [body] is the pre-generated one-liner (cached / AI / fallback) — we
+  /// take it as an argument so the caller owns the persona copy pipeline.
+  static Future<void> scheduleWeeklyRecap({required String body}) async {
+    if (!_initialized) return;
+    try {
+      const id = 800000001;
+      await _plugin.cancel(id);
+
+      // Build next Sunday at 19:00 in local time.
+      final now = tz.TZDateTime.now(tz.local);
+      int daysUntilSunday = (DateTime.sunday - now.weekday) % 7;
+      tz.TZDateTime next = tz.TZDateTime(
+          tz.local, now.year, now.month, now.day, 19, 0)
+          .add(Duration(days: daysUntilSunday));
+      if (!next.isAfter(now)) {
+        next = next.add(const Duration(days: 7));
+      }
+
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          'breakcount_announcements',
+          'Announcements',
+          channelDescription: 'News and updates from BreakCount',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(),
+      );
+      await _zonedScheduleWithFallback(
+        id,
+        'Your week · vibe recap',
+        body,
+        next,
+        details,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      );
+    } catch (e) {
+      debugPrint('scheduleWeeklyRecap error: $e');
+    }
+  }
+
+  static Future<void> cancelWeeklyRecap() async {
+    if (!_initialized) return;
+    try {
+      await _plugin.cancel(800000001);
+    } catch (_) {}
+  }
+
   static String _titleFor(Reminder reminder) {
     switch (reminder.type) {
       case ReminderType.exam:

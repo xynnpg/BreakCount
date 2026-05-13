@@ -73,10 +73,10 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.surfaceBorder),
+                border: Border.all(color: Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
               ),
-              child: const Icon(Icons.arrow_back_rounded,
-                  color: AppColors.textSecondary, size: 18),
+              child: Icon(Icons.arrow_back_rounded,
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(200), size: 18),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -85,7 +85,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
             style: GoogleFonts.outfit(
               fontSize: 28,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
           ),
@@ -93,7 +93,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
           Text(
             'Optional — helps prioritize your subjects.',
             style: GoogleFonts.outfit(
-                fontSize: 14, color: AppColors.textTertiary),
+                fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
           ),
         ],
       ),
@@ -124,14 +124,14 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'You can set a profile later in Settings.',
                 style: GoogleFonts.outfit(
-                    fontSize: 13, color: AppColors.textTertiary),
+                    fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -199,7 +199,7 @@ class _ProfileSelectionScreenState extends State<ProfileSelectionScreen> {
               child: Text(
                 'Skip',
                 style: GoogleFonts.outfit(
-                    color: AppColors.textTertiary,
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                     fontSize: 14,
                     fontWeight: FontWeight.w500),
               ),
@@ -236,7 +236,7 @@ class _ProfileTile extends StatelessWidget {
             color: selected ? AppColors.primaryLight : Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: selected ? AppColors.primary : AppColors.surfaceBorder,
+              color: selected ? Theme.of(context).colorScheme.primary : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
               width: selected ? 1.5 : 1,
             ),
             boxShadow: const [
@@ -268,7 +268,7 @@ class _ProfileTile extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 14,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected ? AppColors.primary : AppColors.textSecondary,
+                    color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withAlpha(200),
                   ),
                 ),
               ),

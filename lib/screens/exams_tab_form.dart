@@ -123,6 +123,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final imp = _importance;
     final impColor = imp.color;
 
@@ -146,7 +147,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
                   height: 3,
                   margin: const EdgeInsets.only(top: 4, bottom: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceBorder,
+                    color: theme.dividerTheme.color ?? AppColors.surfaceBorder,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -156,7 +157,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
                 style: GoogleFonts.outfit(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                     letterSpacing: -0.5),
               ),
               const SizedBox(height: 18),
@@ -201,23 +202,23 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.surfaceBorder),
+                    border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today_outlined,
-                          size: 15, color: AppColors.primary),
+                      Icon(Icons.calendar_today_outlined,
+                          size: 15, color: theme.colorScheme.primary),
                       const SizedBox(width: 9),
                       Text(
                         _dateLabel,
                         style: GoogleFonts.outfit(
-                            color: AppColors.textPrimary, fontSize: 14),
+                            color: theme.colorScheme.onSurface, fontSize: 14),
                       ),
                       const Spacer(),
                       Text(
                         _daysAwayHint,
                         style: GoogleFonts.outfit(
-                            color: AppColors.textTertiary, fontSize: 11),
+                            color: theme.colorScheme.onSurface.withAlpha(120), fontSize: 11),
                       ),
                     ],
                   ),
@@ -234,23 +235,23 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.surfaceBorder),
+                    border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.access_time_rounded,
-                          size: 15, color: AppColors.primary),
+                      Icon(Icons.access_time_rounded,
+                          size: 15, color: theme.colorScheme.primary),
                       const SizedBox(width: 9),
                       Text(
                         _timeLabel,
                         style: GoogleFonts.outfit(
-                            color: AppColors.textPrimary, fontSize: 14),
+                            color: theme.colorScheme.onSurface, fontSize: 14),
                       ),
                       const Spacer(),
                       Text(
                         'Notified 24h & 1h before',
                         style: GoogleFonts.outfit(
-                            color: AppColors.textTertiary, fontSize: 11),
+                            color: theme.colorScheme.onSurface.withAlpha(120), fontSize: 11),
                       ),
                     ],
                   ),

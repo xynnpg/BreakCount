@@ -10,12 +10,13 @@ class PhotoSourceSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
         boxShadow: const [
           BoxShadow(
               color: Color(0x14000000), blurRadius: 24, offset: Offset(0, 8))
@@ -33,14 +34,14 @@ class PhotoSourceSheet extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'AI will read and extract your schedule.',
                 style: GoogleFonts.outfit(
-                    fontSize: 13, color: AppColors.textTertiary),
+                    fontSize: 13, color: theme.colorScheme.onSurface.withAlpha(120)),
               ),
               const SizedBox(height: AppSpacing.lg),
               SourceTile(
@@ -62,7 +63,7 @@ class PhotoSourceSheet extends StatelessWidget {
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: Text('Cancel',
-                      style: GoogleFonts.outfit(color: AppColors.textTertiary)),
+                      style: GoogleFonts.outfit(color: theme.colorScheme.onSurface.withAlpha(120))),
                 ),
               ),
             ],
@@ -91,14 +92,15 @@ class SourceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.scaffoldBg,
+          color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.surfaceBorder),
+          border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
         ),
         child: Row(
           children: [
@@ -106,10 +108,10 @@ class SourceTile extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: AppColors.primaryLight,
+                color: theme.colorScheme.primary.withAlpha(20),
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: Icon(icon, color: AppColors.primary, size: 22),
+              child: Icon(icon, color: theme.colorScheme.primary, size: 22),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -120,18 +122,18 @@ class SourceTile extends StatelessWidget {
                       style: GoogleFonts.outfit(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       )),
                   Text(sub,
                       style: GoogleFonts.outfit(
                         fontSize: 12,
-                        color: AppColors.textTertiary,
+                        color: theme.colorScheme.onSurface.withAlpha(120),
                       )),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: AppColors.textTertiary, size: 20),
+            Icon(Icons.chevron_right_rounded,
+                color: theme.colorScheme.onSurface.withAlpha(120), size: 20),
           ],
         ),
       ),
@@ -146,26 +148,27 @@ class MergeDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AlertDialog(
       title: Text('Existing schedule found',
           style: GoogleFonts.outfit(
-              fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              fontWeight: FontWeight.w700, color: theme.colorScheme.onSurface)),
       content: Text(
         'Do you want to add these classes to your existing schedule, or replace everything?',
         style: GoogleFonts.outfit(
-            color: AppColors.textSecondary, fontSize: 13, height: 1.5),
+            color: theme.colorScheme.onSurface.withAlpha(180), fontSize: 13, height: 1.5),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, 'cancel'),
           child: Text('Cancel',
-              style: GoogleFonts.outfit(color: AppColors.textTertiary)),
+              style: GoogleFonts.outfit(color: theme.colorScheme.onSurface.withAlpha(120))),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, 'add'),
           child: Text('Add to existing',
               style: GoogleFonts.outfit(
-                  color: AppColors.primary, fontWeight: FontWeight.w600)),
+                  color: theme.colorScheme.primary, fontWeight: FontWeight.w600)),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, 'replace'),

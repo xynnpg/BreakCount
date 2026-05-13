@@ -79,7 +79,7 @@ class _WelcomePage3GoogleState extends State<WelcomePage3Google> {
             style: GoogleFonts.outfit(
               fontSize: 34,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -1.2,
               height: 1.1,
             ),
@@ -89,7 +89,7 @@ class _WelcomePage3GoogleState extends State<WelcomePage3Google> {
             'Connect Google to restore your schedule, exams, and settings — or start fresh and back up later.',
             style: GoogleFonts.outfit(
               fontSize: 15,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(200),
               height: 1.6,
             ),
           ),
@@ -156,7 +156,7 @@ class _WelcomePage3GoogleState extends State<WelcomePage3Google> {
               child: Text(
                 'Skip for now',
                 style: GoogleFonts.outfit(
-                    color: AppColors.textTertiary,
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                     fontSize: 15,
                     fontWeight: FontWeight.w500),
               ),

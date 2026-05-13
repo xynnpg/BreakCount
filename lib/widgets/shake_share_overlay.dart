@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../app/constants.dart';
+import '../app/persona_theme_ext.dart';
 import '../models/nearby_device.dart';
 import '../services/analytics_service.dart';
 import '../services/mesh_service.dart';
@@ -303,7 +304,10 @@ class _ShakeMeshOverlayState extends State<ShakeMeshOverlay>
         child: AnimatedBuilder(
           animation: _radarAnim,
           builder: (ctx, child) => CustomPaint(
-            painter: RadarPainter(progress: _radarAnim.value),
+            painter: RadarPainter(
+              progress: _radarAnim.value,
+              color: ctx.personaTint,
+            ),
           ),
         ),
       ),

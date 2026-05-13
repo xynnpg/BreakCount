@@ -29,13 +29,14 @@ class _RemindersScreenState extends State<RemindersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final upcoming =
         _reminders.where((r) => !r.isPast && !r.isCompleted).toList();
     final past =
         _reminders.where((r) => r.isPast || r.isCompleted).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBg,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
           children: [
             _buildAppBar(context),
@@ -77,12 +78,13 @@ class _RemindersScreenState extends State<RemindersScreen> {
   }
 
   Widget _buildEmpty(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.notifications_none_outlined,
-              size: 64, color: AppColors.textTertiary),
+          Icon(Icons.notifications_none_outlined,
+              size: 64, color: theme.colorScheme.onSurface.withAlpha(140)),
           const SizedBox(height: AppSpacing.lg),
           Text('No reminders',
               style: Theme.of(context).textTheme.headlineSmall),
@@ -90,7 +92,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
           Text(
             'Tap + to add a reminder for a test or break.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(color: AppColors.textTertiary),
+            style: GoogleFonts.outfit(
+                color: theme.colorScheme.onSurface.withAlpha(140)),
           ),
         ],
       ),
@@ -141,6 +144,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(
@@ -148,7 +152,7 @@ class _SectionHeader extends StatelessWidget {
         style: GoogleFonts.outfit(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: AppColors.textTertiary,
+          color: theme.colorScheme.onSurface.withAlpha(140),
           letterSpacing: 1.2,
         ),
       ),
@@ -169,6 +173,7 @@ class _ReminderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final subject = reminder.subjectId != null
         ? ScheduleService.subjectById(reminder.subjectId!)
         : null;
@@ -193,9 +198,9 @@ class _ReminderTile extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: AppSpacing.sm),
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.surfaceBorder),
+            border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
           ),
           child: Row(
             children: [
@@ -211,8 +216,8 @@ class _ReminderTile extends StatelessWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: isPast
-                            ? AppColors.textTertiary
-                            : AppColors.textPrimary,
+                            ? theme.colorScheme.onSurface.withAlpha(140)
+                            : theme.colorScheme.onSurface,
                         decoration: reminder.isCompleted
                             ? TextDecoration.lineThrough
                             : null,
@@ -224,7 +229,7 @@ class _ReminderTile extends StatelessWidget {
                       DateFormat('EEE, d MMM • HH:mm')
                           .format(reminder.eventDate),
                       style: GoogleFonts.outfit(
-                          fontSize: 12, color: AppColors.textTertiary),
+                          fontSize: 12, color: theme.colorScheme.onSurface.withAlpha(140)),
                     ),
                     if (subject != null) ...[
                       const SizedBox(height: 2),
@@ -240,8 +245,8 @@ class _ReminderTile extends StatelessWidget {
                 ),
               ),
               if (isPast)
-                const Icon(Icons.check_circle_outline,
-                    size: 16, color: AppColors.textTertiary),
+                Icon(Icons.check_circle_outline,
+                    size: 16, color: theme.colorScheme.onSurface.withAlpha(140)),
             ],
           ),
         ),

@@ -22,7 +22,7 @@ class WelcomePage1 extends StatelessWidget {
     required this.title2,
   });
 
-  Widget _buildChar(String char, int index, {required bool isAccent}) {
+  Widget _buildChar(BuildContext context, String char, int index, {required bool isAccent}) {
     final ctrl = charControllers[index];
     final slide = Tween<Offset>(
       begin: const Offset(0, 0.45),
@@ -39,7 +39,7 @@ class WelcomePage1 extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 76,
               fontWeight: FontWeight.w800,
-              color: isAccent ? AppColors.primary : AppColors.textPrimary,
+              color: isAccent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
               height: 1.0,
               letterSpacing: -2.5,
             ),
@@ -63,13 +63,13 @@ class WelcomePage1 extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: title1.split('').asMap().entries.map((e) {
-                  return _buildChar(e.value, e.key, isAccent: false);
+                  return _buildChar(context, e.value, e.key, isAccent: false);
                 }).toList(),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: title2.split('').asMap().entries.map((e) {
-                  return _buildChar(e.value, e.key + title1.length,
+                  return _buildChar(context, e.value, e.key + title1.length,
                       isAccent: true);
                 }).toList(),
               ),
@@ -103,7 +103,7 @@ class WelcomePage1 extends StatelessWidget {
                     style: GoogleFonts.outfit(
                       fontSize: 17,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(200),
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -112,7 +112,7 @@ class WelcomePage1 extends StatelessWidget {
                     'Track school breaks, manage your schedule,\nand stay ahead — all offline.',
                     style: GoogleFonts.outfit(
                       fontSize: 14,
-                      color: AppColors.textTertiary,
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                       height: 1.7,
                     ),
                   ),
@@ -154,7 +154,7 @@ class WelcomePage2 extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 34,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -1.2,
               height: 1.1,
             ),
@@ -186,12 +186,12 @@ class WelcomePage2 extends StatelessWidget {
                               style: GoogleFonts.outfit(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               )),
                           Text(f.$3,
                               style: GoogleFonts.outfit(
                                 fontSize: 13,
-                                color: AppColors.textTertiary,
+                                color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                               )),
                         ],
                       ),

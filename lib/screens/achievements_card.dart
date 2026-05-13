@@ -46,7 +46,7 @@ class AchievementCard extends StatelessWidget {
       case AchievementRarity.platinum:
         return const Color(0xFF4FC3F7);
       case AchievementRarity.secret:
-        return AppColors.textTertiary;
+        return const Color(0xFFA89888);
     }
   }
 
@@ -67,6 +67,7 @@ class AchievementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final unlock = AchievementService.getUnlock(achievement.id);
     final isUnlocked = unlock != null;
     final isSecret = achievement.isSecret && !isUnlocked;
@@ -90,7 +91,7 @@ class AchievementCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isUnlocked
                       ? rColor.withAlpha(20)
-                      : AppColors.surfaceBorder.withAlpha(80),
+                      : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder).withAlpha(80),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: ColorFiltered(
@@ -106,7 +107,7 @@ class AchievementCard extends StatelessWidget {
                   child: Icon(
                     achievement.icon,
                     size: 22,
-                    color: isUnlocked ? rColor : AppColors.textTertiary,
+                    color: isUnlocked ? rColor : Theme.of(context).colorScheme.onSurface.withAlpha(140),
                   ),
                 ),
               ),
@@ -123,7 +124,7 @@ class AchievementCard extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
-                    color: isUnlocked ? rColor : AppColors.textTertiary,
+                    color: isUnlocked ? rColor : Theme.of(context).colorScheme.onSurface.withAlpha(140),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -137,7 +138,7 @@ class AchievementCard extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color:
-                  isUnlocked ? AppColors.textPrimary : AppColors.textSecondary,
+                  isUnlocked ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface.withAlpha(200),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -148,7 +149,7 @@ class AchievementCard extends StatelessWidget {
               isSecret ? 'Unlock to reveal' : achievement.description,
               style: GoogleFonts.outfit(
                 fontSize: 10,
-                color: AppColors.textTertiary,
+                color: theme.colorScheme.onSurface.withAlpha(120),
                 height: 1.4,
               ),
               maxLines: 3,
@@ -165,7 +166,7 @@ class AchievementCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: (count / achievement.goal).clamp(0.0, 1.0),
                       minHeight: 3,
-                      backgroundColor: AppColors.surfaceBorder,
+                      backgroundColor: Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder,
                       valueColor:
                           const AlwaysStoppedAnimation(AppColors.primary),
                     ),
@@ -176,7 +177,7 @@ class AchievementCard extends StatelessWidget {
                   '$count/${achievement.goal}',
                   style: GoogleFonts.outfit(
                     fontSize: 9,
-                    color: AppColors.textTertiary,
+                    color: theme.colorScheme.onSurface.withAlpha(120),
                   ),
                 ),
               ],

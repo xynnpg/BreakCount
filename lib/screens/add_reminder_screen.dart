@@ -50,6 +50,7 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
   }
 
   Future<void> _pickDate() async {
+    final theme = Theme.of(context);
     final picked = await showDatePicker(
       context: context,
       initialDate: _eventDate,
@@ -58,8 +59,8 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
       builder: (c, child) => Theme(
         data: Theme.of(c).copyWith(
           colorScheme: Theme.of(c).colorScheme.copyWith(
-                primary: AppColors.primaryPurple,
-                surface: AppColors.bgDark,
+                primary: theme.colorScheme.primary,
+                surface: theme.colorScheme.surface,
               ),
         ),
         child: child!,
@@ -73,8 +74,8 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
       initialTime: TimeOfDay.fromDateTime(_eventDate),
       builder: (c, child) => Theme(
         data: Theme.of(c).copyWith(
-          timePickerTheme: const TimePickerThemeData(
-            backgroundColor: AppColors.bgDark,
+          timePickerTheme: TimePickerThemeData(
+            backgroundColor: theme.colorScheme.surface,
           ),
         ),
         child: child!,
@@ -118,6 +119,7 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: AnimatedGradientBg(
         child: Form(
@@ -129,7 +131,7 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
                 backgroundColor: Colors.transparent,
                 title: Text(
                   widget.reminder != null ? 'Edit Reminder' : 'Add Reminder',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: theme.textTheme.titleLarge,
                 ),
                 actions: [
                   TextButton(
@@ -144,7 +146,7 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
                         : Text(
                             'Save',
                             style: GoogleFonts.outfit(
-                              color: AppColors.primaryPurple,
+                              color: theme.colorScheme.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -158,11 +160,11 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
                     TextFormField(
                       controller: _titleController,
                       style:
-                          GoogleFonts.outfit(color: AppColors.textPrimary),
-                      decoration: const InputDecoration(
+                          GoogleFonts.outfit(color: theme.colorScheme.onSurface),
+                      decoration: InputDecoration(
                         labelText: 'Title',
                         prefixIcon: Icon(Icons.title,
-                            color: AppColors.textTertiary),
+                            color: theme.colorScheme.onSurface.withAlpha(140)),
                       ),
                       textCapitalization: TextCapitalization.sentences,
                       validator: (v) => v == null || v.trim().isEmpty
@@ -191,12 +193,13 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
   }
 
   Widget _buildTypeSelector() {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Type',
             style: GoogleFonts.outfit(
-                color: AppColors.textTertiary, fontSize: 12)),
+                color: theme.colorScheme.onSurface.withAlpha(140), fontSize: 12)),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: 8,
@@ -211,13 +214,13 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
                     horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   color: selected
-                      ? AppColors.primaryPurple.withAlpha(60)
-                      : AppColors.bgSurface,
+                      ? theme.colorScheme.primary.withAlpha(60)
+                      : theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppRadius.full),
                   border: Border.all(
                     color: selected
-                        ? AppColors.primaryPurple
-                        : Colors.white.withAlpha(20),
+                        ? theme.colorScheme.primary
+                        : theme.dividerTheme.color ?? AppColors.surfaceBorder,
                   ),
                 ),
                 child: Text(
@@ -225,8 +228,8 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
                   style: GoogleFonts.outfit(
                     fontSize: 13,
                     color: selected
-                        ? AppColors.primaryPurple
-                        : AppColors.textSecondary,
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface.withAlpha(200),
                     fontWeight: selected
                         ? FontWeight.w600
                         : FontWeight.w400,
@@ -241,31 +244,32 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
   }
 
   Widget _buildDateButton() {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: _pickDate,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.bgSurface,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: Colors.white.withAlpha(20)),
+          border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
         ),
         child: Row(
           children: [
-            const Icon(Icons.event_outlined,
-                color: AppColors.textTertiary, size: 20),
+            Icon(Icons.event_outlined,
+                color: theme.colorScheme.onSurface.withAlpha(140), size: 20),
             const SizedBox(width: AppSpacing.md),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Date & Time',
                     style: GoogleFonts.outfit(
-                        color: AppColors.textTertiary, fontSize: 11)),
+                        color: theme.colorScheme.onSurface.withAlpha(140), fontSize: 11)),
                 Text(
                   DateFormat('EEE, d MMM yyyy • HH:mm')
                       .format(_eventDate),
                   style: GoogleFonts.outfit(
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),
@@ -273,8 +277,8 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
               ],
             ),
             const Spacer(),
-            const Icon(Icons.edit_outlined,
-                color: AppColors.textTertiary, size: 18),
+            Icon(Icons.edit_outlined,
+                color: theme.colorScheme.onSurface.withAlpha(140), size: 18),
           ],
         ),
       ),
@@ -282,20 +286,21 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
   }
 
   Widget _buildAlertTimingSelector() {
+    final theme = Theme.of(context);
     return DropdownButtonFormField<AlertTiming>(
       initialValue: _alertTiming,
-      dropdownColor: AppColors.bgDark,
-      decoration: const InputDecoration(
+      dropdownColor: theme.colorScheme.surface,
+      decoration: InputDecoration(
         labelText: 'Alert',
         prefixIcon: Icon(Icons.alarm_outlined,
-            color: AppColors.textTertiary),
+            color: theme.colorScheme.onSurface.withAlpha(140)),
       ),
       items: AlertTiming.values
           .map((t) => DropdownMenuItem(
                 value: t,
                 child: Text(t.label,
                     style:
-                        GoogleFonts.outfit(color: AppColors.textPrimary)),
+                        GoogleFonts.outfit(color: theme.colorScheme.onSurface)),
               ))
           .toList(),
       onChanged: (v) => setState(() => _alertTiming = v!),
@@ -303,19 +308,20 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
   }
 
   Widget _buildSubjectSelector() {
+    final theme = Theme.of(context);
     return DropdownButtonFormField<String?>(
       initialValue: _selectedSubjectId,
-      dropdownColor: AppColors.bgDark,
-      decoration: const InputDecoration(
+      dropdownColor: theme.colorScheme.surface,
+      decoration: InputDecoration(
         labelText: 'Subject (optional)',
         prefixIcon: Icon(Icons.book_outlined,
-            color: AppColors.textTertiary),
+            color: theme.colorScheme.onSurface.withAlpha(140)),
       ),
       items: [
         DropdownMenuItem(
           value: null,
           child: Text('None',
-              style: GoogleFonts.outfit(color: AppColors.textTertiary)),
+              style: GoogleFonts.outfit(color: theme.colorScheme.onSurface.withAlpha(140))),
         ),
         ..._subjects.map((s) => DropdownMenuItem(
               value: s.id,
@@ -332,7 +338,7 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
                   const SizedBox(width: 8),
                   Text(s.name,
                       style: GoogleFonts.outfit(
-                          color: AppColors.textPrimary)),
+                          color: theme.colorScheme.onSurface)),
                 ],
               ),
             )),

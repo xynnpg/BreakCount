@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 
 import '../app/constants.dart';
 import '../models/nearby_device.dart';
 import '../models/schedule.dart';
 import '../models/subject.dart';
+import '../services/achievement_service.dart';
 import '../services/schedule_service.dart';
 import '../services/storage_service.dart';
 
@@ -23,21 +25,59 @@ class ReceivedSchedule {
   });
 }
 
+class ReceivedPersona {
+  final String personaId;
+  final String personaName;
+  final String personaEmoji;
+  final String fromDisplayName;
+
+  const ReceivedPersona({
+    required this.personaId,
+    required this.personaName,
+    required this.personaEmoji,
+    required this.fromDisplayName,
+  });
+}
+
 class MeshService {
   MeshService._();
   static final MeshService instance = MeshService._();
 
   static const String _serviceId = 'breakcount';
 
+  // Minimal persona display map for received-persona snackbar rendering.
+  // Covers all 30 personas; emoji + name only (no tint needed here).
+  static const _kPersonaDisplay = {
+    'hype': ('🔥', 'Hype'), 'chill': ('😎', 'Chill'),
+    'dramatic': ('🎭', 'Dramatic'), 'sarcastic': ('🙃', 'Sarcastic'),
+    'ghost': ('👻', 'Ghost'), 'sage': ('🧙', 'Sage'),
+    'menace': ('😈', 'Menace'), 'zen': ('🧘', 'Zen'),
+    'nerd': ('🤓', 'Nerd'), 'tired': ('🥱', 'Tired'),
+    'ice': ('🧊', 'Ice'), 'gremlin': ('😈', 'Gremlin'),
+    'philosopher': ('🧐', 'Philosopher'), 'goblin': ('👺', 'Goblin'),
+    'cloud': ('☁️', 'Cloud'), 'volcano': ('🌋', 'Volcano'),
+    'sloth': ('🦥', 'Sloth'), 'storm': ('⛈️', 'Storm'),
+    'sprout': ('🌱', 'Sprout'), 'moon': ('🌙', 'Moon'),
+    'star': ('⭐', 'Star'), 'phoenix': ('🦅', 'Phoenix'),
+    'sunflower': ('🌻', 'Sunflower'), 'jester': ('🃏', 'Jester'),
+    'monk': ('☸️', 'Monk'), 'rebel': ('🤘', 'Rebel'),
+    'hacker': ('💻', 'Hacker'), 'chef': ('👨‍🍳', 'Chef'),
+    'pirate': ('🏴‍☠️', 'Pirate'), 'robot': ('🤖', 'Robot'),
+  };
+
   final _devicesController =
       StreamController<List<NearbyDevice>>.broadcast();
   final _receivedController =
       StreamController<ReceivedSchedule>.broadcast();
+  final _personaReceivedController =
+      StreamController<ReceivedPersona>.broadcast();
 
   // Keyed by anonId to deduplicate the same physical device
   final Map<String, NearbyDevice> _devices = {};
   // Reverse lookup: endpointId → anonId
   final Map<String, String> _endpointToAnonId = {};
+  // Cache of peer unlocks keyed by anonId (from MEET_HANDSHAKE payload).
+  final Map<String, Set<String>> _peerUnlocks = {};
 
   final Set<String> _connectedEndpoints = {};
   final Set<String> _initiatorEndpoints = {};
@@ -48,7 +88,17 @@ class MeshService {
 
   Stream<List<NearbyDevice>> get devicesStream => _devicesController.stream;
   Stream<ReceivedSchedule> get receivedStream => _receivedController.stream;
+  Stream<ReceivedPersona> get personaReceivedStream =>
+      _personaReceivedController.stream;
   bool get isRunning => _running;
+
+  /// Returns the set of achievement ids the peer with [anonId] has unlocked,
+  /// or null if not yet received. Populated when MEET_HANDSHAKE arrives.
+  Set<String>? peerUnlocks(String anonId) => _peerUnlocks[anonId];
+
+  /// Clears cached peer unlocks (e.g. on stop).
+  @visibleForTesting
+  void resetPeerUnlocksForTests() => _peerUnlocks.clear();
 
   /// Persistent anonymous device ID — generated once, stored in prefs.
   String get _anonId {
@@ -132,6 +182,23 @@ class MeshService {
     }
   }
 
+  /// Sends a [PERSONA_PAYLOAD] directly to [endpointId] — no request/response
+  /// roundtrip. The peer receives it via [personaReceivedStream].
+  Future<void> sharePersona(String endpointId,
+      {required String personaId}) async {
+    try {
+      final myName =
+          StorageService.getString('display_name') ?? 'Student';
+      // Look up persona display info from the nickname map or fall back to id.
+      final bytes = utf8.encode(jsonEncode({
+        'type': 'PERSONA_PAYLOAD',
+        'personaId': personaId,
+        'fromDisplayName': myName,
+      }));
+      await Nearby().sendBytesPayload(endpointId, bytes);
+    } catch (_) {}
+  }
+
   Future<void> requestTransfer(String endpointId) async {
     try {
       _initiatorEndpoints.add(endpointId);
@@ -184,6 +251,10 @@ class MeshService {
       _connectedEndpoints.add(endpointId);
       _updateDevice(endpointId, NearbyDeviceStatus.connected);
 
+      // Both sides send a MEET_HANDSHAKE so both devices credit the meet,
+      // regardless of who initiated the connection.
+      unawaited(_sendMeetHandshake(endpointId));
+
       if (_initiatorEndpoints.contains(endpointId)) {
         _sendRequestSchedule(endpointId);
       }
@@ -226,7 +297,59 @@ class MeshService {
           subjects: subjects,
           fromDisplayName: device?.displayName ?? 'Student',
         ));
+      } else if (type == 'PERSONA_PAYLOAD') {
+        final pid = json['personaId'] as String? ?? 'hype';
+        final fromName = json['fromDisplayName'] as String? ?? 'Student';
+        // Look up display info from the bundled persona list.
+        final anonId = _endpointToAnonId[endpointId];
+        final device = anonId != null ? _devices[anonId] : null;
+        final displayName = device?.displayName ?? fromName;
+        // Resolve emoji + name from the persona id.
+        final knownPersona = _kPersonaDisplay[pid];
+        _personaReceivedController.add(ReceivedPersona(
+          personaId: pid,
+          personaName: knownPersona?.$2 ?? pid,
+          personaEmoji: knownPersona?.$1 ?? '🔥',
+          fromDisplayName: displayName,
+        ));
+      } else if (type == 'MEET_HANDSHAKE') {
+        // Credit both devices with a meet. Dedupe is handled in
+        // AchievementService.onMeet by anonId.
+        final peerAnonId = json['anonId'] as String? ?? '';
+        final peerPersona = json['persona'] as String? ?? 'hype';
+        final peerUnlocksRaw = json['unlocks'] as List?;
+        final peerUnlocks =
+            peerUnlocksRaw?.map((e) => e.toString()).toSet() ?? <String>{};
+        // Stash peer unlocks per-anonId for the Compare Achievements sheet.
+        if (peerAnonId.isNotEmpty) {
+          _peerUnlocks[peerAnonId] = peerUnlocks;
+        }
+        if (peerAnonId.isNotEmpty) {
+          final myPersona =
+              StorageService.getString(StorageKeys.widgetPersona) ?? 'hype';
+          unawaited(AchievementService.onMeet(
+            anonId: peerAnonId,
+            peerPersona: peerPersona,
+            myPersona: myPersona,
+          ));
+        }
       }
+    } catch (_) {}
+  }
+
+  Future<void> _sendMeetHandshake(String endpointId) async {
+    try {
+      final myPersona =
+          StorageService.getString(StorageKeys.widgetPersona) ?? 'hype';
+      final myUnlocks =
+          AchievementService.allUnlocks.map((u) => u.id).toList();
+      final bytes = utf8.encode(jsonEncode({
+        'type': 'MEET_HANDSHAKE',
+        'anonId': _anonId,
+        'persona': myPersona,
+        'unlocks': myUnlocks,
+      }));
+      await Nearby().sendBytesPayload(endpointId, bytes);
     } catch (_) {}
   }
 
@@ -248,6 +371,8 @@ class MeshService {
       };
       final bytes = utf8.encode(jsonEncode(payload));
       await Nearby().sendBytesPayload(endpointId, bytes);
+      // Donor-side credit: increments Echo/Mentor/Teacher ladder.
+      unawaited(AchievementService.onScheduleShared());
     } catch (_) {}
   }
 
