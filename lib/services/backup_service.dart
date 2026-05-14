@@ -5,12 +5,17 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 import '../app/constants.dart';
+import 'achievement_service.dart';
+import 'persona_service.dart';
 import 'storage_service.dart';
+import 'streak_service.dart';
+import 'unlock_service.dart';
 import '../utils/debug_log.dart';
 
 const _backupFileName = 'breakcount_backup.json';
 
 const _backupKeys = [
+  // ── School / schedule ──────────────────────────────────────────────────
   StorageKeys.schoolYear,
   StorageKeys.selectedCountry,
   StorageKeys.schedule,
@@ -26,6 +31,31 @@ const _backupKeys = [
   StorageKeys.currentWeekType,
   StorageKeys.schoolProfile,
   StorageKeys.themeId,
+  // ── Settings ───────────────────────────────────────────────────────────
+  StorageKeys.autoBackup,
+  StorageKeys.vibeBeaconEnabled,
+  StorageKeys.personalizedRecapEnabled,
+  StorageKeys.liveActivityEnabled,
+  // ── Gamification ───────────────────────────────────────────────────────
+  'achievements_v1',
+  'achievement_counts_v1',
+  'install_date_v1',
+  'last_day_open_iso',
+  'streak_current',
+  'streak_longest',
+  'streak_last_open_date',
+  'mood_history_v1',
+  'persona_unlocked_ids',
+  StorageKeys.widgetPersona,
+  'study_log_v1',
+  'daily_quests_date',
+  'daily_quests_progress',
+  'daily_quests_ids',
+  'quest_total_completed',
+  'met_anon_ids_v1',
+  'met_personas_v1',
+  'unlocked_themes_v1',
+  'unlocked_personas_v1',
 ];
 
 final _googleSignIn = GoogleSignIn(
@@ -125,6 +155,7 @@ class BackupService {
 
       await StorageService.saveString(
           StorageKeys.lastBackupTime, DateTime.now().toIso8601String());
+      unawaited(AchievementService.onBackupCompleted());
       dLog('Backup', 'backup → upload OK (${payload.keys.length} keys)');
       return const BackupResult.ok();
     } catch (e) {
@@ -169,6 +200,8 @@ class BackupService {
           restored++;
         }
       }
+      await _reinitServices();
+      unawaited(AchievementService.onBackupRestored());
       dLog('Backup', 'restore → OK ($restored keys restored, exported at ${payload['_exported_at']})');
       return const BackupResult.ok();
     } catch (e) {
@@ -178,6 +211,25 @@ class BackupService {
   }
 
   // ── Private ────────────────────────────────────────────────────────────────
+
+  static Future<void> _reinitServices() async {
+    AchievementService.resetForRestore();
+    AchievementService.init();
+    StreakService.init();
+    // Stamp today so the next recordOpen() sees "same day" and doesn't
+    // recalculate the streak against the backup's stale last-open date.
+    await StorageService.saveString('streak_last_open_date', _todayIso());
+    UnlockService.init();
+    PersonaService.instance.resetForRestore();
+    PersonaService.instance.init();
+  }
+
+  static String _todayIso() {
+    final d = DateTime.now();
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
 
   static Future<drive.DriveApi?> _driveApi() async {
     try {

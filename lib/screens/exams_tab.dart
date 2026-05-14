@@ -55,10 +55,11 @@ class _ExamsTabState extends State<ExamsTab> {
     if (result != null) {
       if (existing == null) {
         await ExamService.addExam(result);
-        final total =
-            ExamService.getUpcoming().length + ExamService.getPast().length;
+        final allExams = [...ExamService.getUpcoming(), ...ExamService.getPast()];
+        final total = allExams.length;
+        final examDates = allExams.map((e) => e.date).toList();
         final unlocked =
-            await AchievementService.onExamAdded(totalExams: total);
+            await AchievementService.onExamAdded(totalExams: total, examDates: examDates);
         for (final id in unlocked) {
           if (mounted) AchievementUnlockOverlay.show(context, id);
         }

@@ -83,12 +83,12 @@ Full review screen lets you edit or swipe-delete entries before saving.
 
 ### 📊 Stats Deep-Dive
 Four chart sections powered by `fl_chart`:
-- **Weekly hours** — bar chart of scheduled hours per subject
+- **Weekly hours** — bar chart of scheduled hours per subject, with logged study sessions overlaid
 - **Subject distribution** — pie chart from your timetable
 - **Mood distribution** — 7d/30d toggle from mood history
 - **Unlock pace** — line chart of achievement unlocks over 60 days
 
-**Study log:** tap the FAB to log "I studied X minutes of [subject]". Logged sessions overlay on the weekly hours chart and tick study-related achievements.
+**Study log:** tap the FAB to log "I studied X minutes of [subject]". Logged sessions overlay on the weekly hours chart and tick study-related achievements. All-time totals (minutes, sessions) are tracked and exposed to the achievement ladder.
 
 ### 📱 Lock-Screen Countdown (Android 14+)
 Optional persistent notification showing your break countdown directly on the lock screen. Uses a Chronometer widget for battery-efficient live ticking. Toggle in Settings → Notifications.
@@ -111,6 +111,9 @@ Sign in with Google to back up everything to your Drive's private app data folde
 
 ### 🔔 Reminders & Notifications
 Local exam reminders + break start/end alerts. Firebase push for app announcements. Achievement unlock notifications.
+
+### 📋 In-App Changelog
+Tap the version badge at the bottom of Settings to open a full-screen changelog viewer. Renders `CHANGELOG.md` with a minimal theme-aware formatter — no extra dependencies.
 
 ---
 

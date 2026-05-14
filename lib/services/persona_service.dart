@@ -81,6 +81,9 @@ class PersonaService {
     return newly;
   }
 
+  /// Clears init flag so [init] re-reads from storage after a restore.
+  void resetForRestore() => _initialised = false;
+
   /// Test-only reset.
   @visibleForTesting
   Future<void> resetForTests() async {

@@ -41,9 +41,48 @@ Each persona has entries for every slot. The widget service also uses persona co
 | `dramatic` | Dramatic | 🎭 | Purple |
 | `sarcastic` | Sarcastic | 🙃 | Teal |
 
-## Unlockable Personas (26 more)
+## Unlockable Personas
 
-Unlock conditions are registered in `UnlockService`. Mix of streak milestones and achievement triggers.
+26 personas require a streak milestone or a specific achievement. Unlock conditions are registered in `UnlockService._personaRequirements`.
+
+| ID | Name | Emoji | Unlock Condition |
+|----|------|-------|-----------------|
+| `ghost` | Ghost | 👻 | Achievement: `50_mondays` |
+| `sage` | Sage | 🧙 | Achievement: `old_guard` |
+| `menace` | Menace | 😈 | Achievement: `achievement_hunter_25` |
+| `zen` | Zen | 🧘 | Achievement: `break_collector` |
+| `nerd` | Nerd | 🤓 | 3-day streak |
+| `tired` | Tired | 🥱 | 7-day streak |
+| `ice` | Ice | 🧊 | 14-day streak |
+| `gremlin` | Gremlin | 😈 | 21-day streak |
+| `philosopher` | Philosopher | 🧐 | 30-day streak |
+| `goblin` | Goblin | 👺 | 42-day streak |
+| `cloud` | Cloud | ☁️ | 50-day streak |
+| `volcano` | Volcano | 🌋 | 60-day streak |
+| `sloth` | Sloth | 🦥 | 75-day streak |
+| `storm` | Storm | ⛈️ | 90-day streak |
+| `sprout` | Sprout | 🌱 | 100-day streak |
+| `moon` | Moon | 🌙 | 120-day streak |
+| `star` | Star | ⭐ | 150-day streak |
+| `phoenix` | Phoenix | 🦅 | 200-day streak |
+| `sunflower` | Sunflower | 🌻 | 250-day streak |
+| `jester` | Jester | 🃏 | Achievement: `recap_regular` |
+| `monk` | Monk | ☸️ | Achievement: `achievement_hunter_50` |
+| `rebel` | Rebel | 🤘 | Achievement: `mood_rollercoaster` |
+| `hacker` | Hacker | 💻 | Achievement: `ai_wizard` |
+| `chef` | Chef | 👨‍🍳 | Achievement: `fully_loaded` |
+| `pirate` | Pirate | 🏴‍☠️ | Achievement: `networker` |
+| `robot` | Robot | 🤖 | Achievement: `year_legend` |
+
+## Permanent Unlock Persistence
+
+Persona unlocks are stored in `unlocked_personas_v1` (a JSON array in SharedPreferences) independently of the current streak. This means:
+
+- **Unlocks survive streak resets** — breaking a streak does not re-lock earned personas
+- **Unlocks survive backup restores** — `unlocked_personas_v1` is included in the Google Drive backup payload
+- **Backfill on init** — `UnlockService.init()` retroactively grants any streak-gated personas the user already earned (based on `StreakService.longestStreak`) but that aren't yet in the persistent set
+
+`UnlockService.recordPersonaUnlock(id)` is called automatically from `main.dart` whenever `StreakService.recordOpen()` resolves with a new milestone streak.
 
 ## PersonaService
 

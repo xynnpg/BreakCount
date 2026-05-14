@@ -70,10 +70,14 @@ class StudyLogService {
 
     // Achievements.
     final weeklyMinutes = _weeklyMinutesFor(entry.timestamp, all);
+    final totalMins = all.fold(0, (sum, l) => sum + l.minutes);
+    final subjectSessions = all.where((l) => l.subjectId == subjectId).length;
     await AchievementService.onStudySessionLogged(
       totalSessions: all.length,
       sessionMinutes: minutes,
       weeklyMinutesAfterThis: weeklyMinutes,
+      totalMinutesEver: totalMins,
+      sessionsForCurrentSubject: subjectSessions,
     );
   }
 

@@ -59,6 +59,16 @@ Global singleton managing the active theme:
 - `AppThemeController.init(savedId)` — restores from storage
 - `AppThemeController.setTheme(preset)` — switches + persists
 
+## Permanent Unlock Persistence
+
+Theme unlocks are stored separately from the current streak in `unlocked_themes_v1` (a JSON array in SharedPreferences). This means:
+
+- **Unlocks survive streak resets** — breaking a streak does not re-lock earned themes
+- **Unlocks survive backup restores** — `unlocked_themes_v1` is included in the Google Drive backup payload
+- **Backfill on init** — `UnlockService.init()` calls `_backfillFromLongestStreak()` at startup, which retroactively grants any streak-gated themes the user already earned (based on `StreakService.longestStreak`) but that aren't yet in the persistent set. This handles existing users upgrading from pre-persistence builds.
+
+`UnlockService.recordThemeUnlock(id)` is called automatically from `main.dart` whenever `StreakService.recordOpen()` resolves with a new milestone streak.
+
 ## Widget Integration
 
 When the theme changes, `main.dart`'s listener calls `WidgetService.update()`, which writes hex color strings to `HomeWidget` SharedPreferences. The Android `BreakCountWidgetProvider` reads these and applies them via `RemoteViews.setInt(...)`.

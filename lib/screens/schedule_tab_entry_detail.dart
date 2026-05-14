@@ -68,7 +68,7 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
     final color = Color(widget.subject.colorValue);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         border: Border(top: BorderSide(color: theme.dividerTheme.color ?? AppColors.surfaceBorder)),
@@ -164,7 +164,6 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
                 Switch(
                   value: _notifyEnabled,
                   onChanged: _toggleNotification,
-                  activeThumbColor: AppColors.primary,
                 ),
               ],
             ),

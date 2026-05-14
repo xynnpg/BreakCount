@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import '../models/reminder.dart';
 import '../app/constants.dart';
+import 'achievement_service.dart';
 import 'storage_service.dart';
 import 'notification_service.dart';
 
@@ -26,6 +29,7 @@ class ReminderService {
     reminders.add(reminder);
     await _save(reminders);
     await NotificationService.scheduleReminder(reminder);
+    unawaited(AchievementService.onReminderAdded(reminders.length));
   }
 
   static Future<void> updateReminder(Reminder reminder) async {

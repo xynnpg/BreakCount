@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:home_widget/home_widget.dart';
@@ -95,6 +96,12 @@ class WidgetService {
       final personaId =
           StorageService.getString(StorageKeys.widgetPersona) ?? 'hype';
       final persona = personaById(personaId);
+      // Fire widget_persona_changed achievement if persona differs from last widget update
+      final lastWidgetPersona = StorageService.getString('last_widget_persona_id');
+      if (lastWidgetPersona != null && lastWidgetPersona != personaId) {
+        unawaited(AchievementService.onWidgetPersonaChanged());
+      }
+      unawaited(StorageService.saveString('last_widget_persona_id', personaId));
       final fireStreak = MoodService.currentStreak(MoodKind.fire);
       final unlockedCount = AchievementService.allUnlocks.length;
       // Latest unlock (if any, within the last 48h for the "fresh" badge).

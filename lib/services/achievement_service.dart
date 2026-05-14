@@ -184,6 +184,17 @@ class AchievementService {
         if (await unlock('old_guard')) newlyUnlocked.add('old_guard');
       }
     }
+    // Secret date triggers
+    final now = DateTime.now();
+    if (now.month == 1 && now.day == 1 && !isUnlocked('secret_new_year')) {
+      if (await unlock('secret_new_year')) newlyUnlocked.add('secret_new_year');
+    }
+    if (now.month == 2 && now.day == 29 && !isUnlocked('secret_leap_day')) {
+      if (await unlock('secret_leap_day')) newlyUnlocked.add('secret_leap_day');
+    }
+    if (now.weekday == DateTime.friday && now.day == 13 && !isUnlocked('secret_friday_13')) {
+      if (await unlock('secret_friday_13')) newlyUnlocked.add('secret_friday_13');
+    }
     await _save();
     return newlyUnlocked;
   }
@@ -288,11 +299,53 @@ class AchievementService {
       }
     }
 
+    // Secret: exact break start (within same minute)
+    for (final b in schoolYear.breaks) {
+      final diff = now.difference(b.startDate).inMinutes.abs();
+      if (diff <= 1 && !isUnlocked('secret_exact_break')) {
+        if (await unlock('secret_exact_break')) newlyUnlocked.add('secret_exact_break');
+      }
+    }
+
+    // Secret: 100 school days left
+    final schoolDaysLeft = schoolYear.endDate.difference(DateTime(now.year, now.month, now.day)).inDays;
+    if (schoolDaysLeft == 100 && !isUnlocked('secret_100_days_left')) {
+      if (await unlock('secret_100_days_left')) newlyUnlocked.add('secret_100_days_left');
+    }
+
+    // Secret: first week done (5 school days elapsed)
+    final schoolDaysElapsed = DateTime(now.year, now.month, now.day)
+        .difference(DateTime(schoolYear.startDate.year, schoolYear.startDate.month, schoolYear.startDate.day))
+        .inDays;
+    if (schoolDaysElapsed >= 5 && schoolDaysElapsed <= 7 && !isUnlocked('secret_first_week_done')) {
+      if (await unlock('secret_first_week_done')) newlyUnlocked.add('secret_first_week_done');
+    }
+
+    // Secret: no break in next 30 days
+    final in30 = now.add(const Duration(days: 30));
+    final hasBreakSoon = schoolYear.breaks.any((b) =>
+        b.startDate.isBefore(in30) && b.endDate.isAfter(now));
+    if (!hasBreakSoon && schoolStarted && !isUnlocked('secret_no_breaks_month')) {
+      if (await unlock('secret_no_breaks_month')) newlyUnlocked.add('secret_no_breaks_month');
+    }
+
+    // Multi-year: count how many school years have been set
+    final yearCount = (StorageService.getInt('school_year_count') ?? 1);
+    if (yearCount >= 2 && !isUnlocked('school_2nd_year')) {
+      if (await unlock('school_2nd_year')) newlyUnlocked.add('school_2nd_year');
+    }
+    if (yearCount >= 3 && !isUnlocked('school_3rd_year')) {
+      if (await unlock('school_3rd_year')) newlyUnlocked.add('school_3rd_year');
+    }
+
     return newlyUnlocked;
   }
 
   /// Call when an exam is added.
-  static Future<List<String>> onExamAdded({required int totalExams}) async {
+  static Future<List<String>> onExamAdded({
+    required int totalExams,
+    List<DateTime> examDates = const [],
+  }) async {
     final List<String> newlyUnlocked = [];
     if (!isUnlocked('first_exam')) {
       if (await unlock('first_exam')) newlyUnlocked.add('first_exam');
@@ -304,9 +357,40 @@ class AchievementService {
       if (await unlock('exam_master')) newlyUnlocked.add('exam_master');
     }
     // All-Nighter: exam added between 11pm–4am
-    final hour = DateTime.now().hour;
+    final now = DateTime.now();
+    final hour = now.hour;
     if ((hour >= 23 || hour < 4) && !isUnlocked('all_nighter')) {
       if (await unlock('all_nighter')) newlyUnlocked.add('all_nighter');
+    }
+    // Exam countdown achievements
+    if (examDates.isNotEmpty) {
+      final today = DateTime(now.year, now.month, now.day);
+      for (final d in examDates) {
+        final examDay = DateTime(d.year, d.month, d.day);
+        final diff = examDay.difference(today).inDays;
+        if (diff >= 0 && diff <= 7 && !isUnlocked('exam_countdown_1week')) {
+          if (await unlock('exam_countdown_1week')) newlyUnlocked.add('exam_countdown_1week');
+        }
+        if (diff >= 0 && diff <= 1 && !isUnlocked('exam_countdown_1day')) {
+          if (await unlock('exam_countdown_1day')) newlyUnlocked.add('exam_countdown_1day');
+        }
+      }
+      // All cleared: every exam is in the past
+      final allPast = examDates.every((d) => d.isBefore(now));
+      if (allPast && examDates.isNotEmpty && !isUnlocked('exam_all_cleared')) {
+        if (await unlock('exam_all_cleared')) newlyUnlocked.add('exam_all_cleared');
+      }
+      // Secret: opened app the evening before an exam (8pm–midnight)
+      if (hour >= 20 && hour < 24) {
+        final tomorrow = today.add(const Duration(days: 1));
+        final hasExamTomorrow = examDates.any((d) {
+          final ed = DateTime(d.year, d.month, d.day);
+          return ed == tomorrow;
+        });
+        if (hasExamTomorrow && !isUnlocked('secret_exam_eve')) {
+          if (await unlock('secret_exam_eve')) newlyUnlocked.add('secret_exam_eve');
+        }
+      }
     }
     return newlyUnlocked;
   }
@@ -346,6 +430,26 @@ class AchievementService {
     final List<String> newly = [];
     final crossed = await increment('one_month', goal: 30);
     if (crossed) newly.add('one_month');
+
+    // Unique-day open milestones (app_open_N)
+    final prev = _counts['unique_days_count'] ?? 0;
+    _counts['unique_days_count'] = prev + 1;
+    await _save();
+    final days = _counts['unique_days_count']!;
+    for (final entry in const {
+      5: 'app_open_5',
+      10: 'app_open_10',
+      25: 'app_open_25',
+      50: 'app_open_50',
+      100: 'app_open_100',
+      200: 'app_open_200',
+      365: 'app_open_365',
+      500: 'app_open_500',
+    }.entries) {
+      if (days >= entry.key && !isUnlocked(entry.value)) {
+        if (await unlock(entry.value)) newly.add(entry.value);
+      }
+    }
     return newly;
   }
 
@@ -358,6 +462,7 @@ class AchievementService {
     required int fireStreak,
     required int deadStreak,
     required bool rollercoaster,
+    int totalMoodLogs = 0,
   }) async {
     final List<String> newly = [];
 
@@ -370,12 +475,19 @@ class AchievementService {
 
     await checkCount('on_fire_7', fireStreak, 7);
     await checkCount('on_fire_30', fireStreak, 30);
+    await checkCount('on_fire_50', fireStreak, 50);
     await checkCount('on_fire_100', fireStreak, 100);
+    await checkCount('dead_streak_7', deadStreak, 7);
     if (deadStreak >= 3 && !isUnlocked('hell_week')) {
       if (await unlock('hell_week')) newly.add('hell_week');
     }
     if (rollercoaster && !isUnlocked('mood_rollercoaster')) {
       if (await unlock('mood_rollercoaster')) newly.add('mood_rollercoaster');
+    }
+    if (totalMoodLogs > 0) {
+      await checkCount('mood_logged_30', totalMoodLogs, 30);
+      await checkCount('mood_logged_100', totalMoodLogs, 100);
+      await checkCount('mood_logged_365', totalMoodLogs, 365);
     }
     await _save();
     return newly;
@@ -395,6 +507,10 @@ class AchievementService {
         !_alreadyInList(newly, 'teacher')) {
       newly.add('teacher');
     }
+    if (await increment('teacher_25', goal: 25) &&
+        !_alreadyInList(newly, 'teacher_25')) {
+      newly.add('teacher_25');
+    }
     return newly;
   }
 
@@ -407,12 +523,18 @@ class AchievementService {
       3: 'streak_3',
       7: 'streak_7',
       14: 'streak_14',
+      21: 'streak_21',
       30: 'streak_30',
+      42: 'streak_42',
       50: 'streak_50',
+      60: 'streak_60',
       75: 'streak_75',
+      90: 'streak_90',
       100: 'streak_100',
+      120: 'streak_120',
       150: 'streak_150',
       200: 'streak_200',
+      250: 'streak_250',
       365: 'streak_365',
     };
     final id = milestones[days];
@@ -464,6 +586,8 @@ class AchievementService {
     required int totalSessions,
     required int sessionMinutes,
     int weeklyMinutesAfterThis = 0,
+    int totalMinutesEver = 0,
+    int sessionsForCurrentSubject = 0,
   }) async {
     final newly = <String>[];
     if (!isUnlocked('first_study')) {
@@ -478,11 +602,22 @@ class AchievementService {
     await tick('study_10', 10);
     await tick('study_50', 50);
     await tick('study_100', 100);
+    await tick('study_200', 200);
+    await tick('study_500', 500);
     if (sessionMinutes >= 180 && !isUnlocked('study_marathon')) {
       if (await unlock('study_marathon')) newly.add('study_marathon');
     }
     if (weeklyMinutesAfterThis >= 600 && !isUnlocked('study_week_10h')) {
       if (await unlock('study_week_10h')) newly.add('study_week_10h');
+    }
+    if (totalMinutesEver >= 1440 && !isUnlocked('study_total_24h')) {
+      if (await unlock('study_total_24h')) newly.add('study_total_24h');
+    }
+    if (totalMinutesEver >= 6000 && !isUnlocked('study_total_100h')) {
+      if (await unlock('study_total_100h')) newly.add('study_total_100h');
+    }
+    if (sessionsForCurrentSubject >= 50 && !isUnlocked('study_subject_master')) {
+      if (await unlock('study_subject_master')) newly.add('study_subject_master');
     }
     return newly;
   }
@@ -505,8 +640,24 @@ class AchievementService {
 
     await tick('quest_10', 10);
     await tick('quest_50', 50);
+    await tick('quest_100', 100);
+    await tick('quest_200', 200);
     if (allThreeTodayComplete && !isUnlocked('quest_triple')) {
       if (await unlock('quest_triple')) newly.add('quest_triple');
+    }
+    // Perfect week: all 3 quests done every day for 7 consecutive days
+    if (allThreeTodayComplete) {
+      final today = _isoDateOnly(DateTime.now());
+      final lastPerfect = StorageService.getString('quest_last_perfect_day');
+      final streak = StorageService.getInt('quest_perfect_streak') ?? 0;
+      // Check if yesterday was also perfect
+      final yesterday = _isoDateOnly(DateTime.now().subtract(const Duration(days: 1)));
+      final newStreak = (lastPerfect == yesterday) ? streak + 1 : 1;
+      await StorageService.saveString('quest_last_perfect_day', today);
+      await StorageService.saveInt('quest_perfect_streak', newStreak);
+      if (newStreak >= 7) {
+        if (await onQuestPerfectWeek()) newly.add('quest_perfect_week');
+      }
     }
     return newly;
   }
@@ -586,8 +737,9 @@ class AchievementService {
     if (!isUnlocked('first_compare')) {
       if (await unlock('first_compare')) newly.add('first_compare');
     }
-    final crossed = await increment('compare_5', goal: 5);
-    if (crossed) newly.add('compare_5');
+    if (await increment('compare_5', goal: 5)) newly.add('compare_5');
+    if (await increment('compare_10', goal: 10)) newly.add('compare_10');
+    if (await increment('compare_25', goal: 25)) newly.add('compare_25');
     return newly;
   }
 
@@ -619,6 +771,12 @@ class AchievementService {
     }
     if (met.length >= 10 && !isUnlocked('networker')) {
       if (await unlock('networker')) newly.add('networker');
+    }
+    if (met.length >= 25 && !isUnlocked('networker_25')) {
+      if (await unlock('networker_25')) newly.add('networker_25');
+    }
+    if (met.length >= 50 && !isUnlocked('networker_50')) {
+      if (await unlock('networker_50')) newly.add('networker_50');
     }
     const basePack = {'hype', 'chill', 'dramatic', 'sarcastic'};
     if (personas.containsAll(basePack) && !isUnlocked('met_the_pack')) {
@@ -719,6 +877,75 @@ class AchievementService {
 
   static Future<void> _writeStringSet(String key, Set<String> value) async {
     await StorageService.saveString(key, jsonEncode(value.toList()));
+  }
+
+  /// Called when a reminder is added.
+  static Future<List<String>> onReminderAdded(int totalReminders) async {
+    final newly = <String>[];
+    if (!isUnlocked('first_reminder')) {
+      if (await unlock('first_reminder')) newly.add('first_reminder');
+    }
+    if (totalReminders >= 5 && !isUnlocked('reminder_5')) {
+      if (await unlock('reminder_5')) newly.add('reminder_5');
+    }
+    if (totalReminders >= 20 && !isUnlocked('reminder_20')) {
+      if (await unlock('reminder_20')) newly.add('reminder_20');
+    }
+    return newly;
+  }
+
+  /// Called when a reminder notification fires on time.
+  static Future<bool> onReminderFired() => unlock('reminder_punctual');
+
+  /// Called when a notification type is toggled on.
+  static Future<bool> onNotificationToggled(String type) {
+    switch (type) {
+      case 'general': return unlock('notif_enabled');
+      case 'break': return unlock('notif_break_enabled');
+      case 'class': return unlock('notif_class_enabled');
+      default: return Future.value(false);
+    }
+  }
+
+  /// Called when the home-screen widget is tapped.
+  static Future<List<String>> onWidgetTapped() async {
+    final newly = <String>[];
+    if (!isUnlocked('widget_first_use')) {
+      if (await unlock('widget_first_use')) newly.add('widget_first_use');
+    }
+    final crossed = await increment('widget_5_taps', goal: 5);
+    if (crossed) newly.add('widget_5_taps');
+    return newly;
+  }
+
+  /// Called when the widget persona changes.
+  static Future<bool> onWidgetPersonaChanged() => unlock('widget_persona_changed');
+
+  /// Called when a backup completes successfully.
+  static Future<List<String>> onBackupCompleted() async {
+    final newly = <String>[];
+    if (!isUnlocked('first_backup')) {
+      if (await unlock('first_backup')) newly.add('first_backup');
+    }
+    final crossed = await increment('backup_5', goal: 5);
+    if (crossed) newly.add('backup_5');
+    return newly;
+  }
+
+  /// Called when a backup is restored successfully.
+  static Future<bool> onBackupRestored() => unlock('backup_restored');
+
+  /// Called when all 5 weekdays have at least one schedule entry.
+  static Future<bool> onAllSubjectsAdded() => unlock('secret_all_subjects');
+
+  /// Called when all 3 daily quests are completed for 7 consecutive days.
+  static Future<bool> onQuestPerfectWeek() => unlock('quest_perfect_week');
+
+  /// Clears in-memory cache so [init] re-reads from storage after a restore.
+  static void resetForRestore() {
+    _unlocked = [];
+    _counts = {};
+    _loaded = false;
   }
 
   /// Test-only: resets all in-memory + persisted state. Not for production.

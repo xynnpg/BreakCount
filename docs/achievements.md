@@ -61,11 +61,13 @@ Thresholds: L1=0, L2=200, L3=600, L4=1500, L5=3500, L6=7000, L7=12000, L8=20000,
 
 `AchievementService` exposes helpers that other services call:
 
-- `onStreakMilestone(int days)` — called by StreakService
-- `onThemeUnlocked(String id)` — called by UnlockService
-- `onPersonaUnlocked(String id)` — called by PersonaService
-- `onStudySessionLogged()` — called by StudyLogService
-- `onAchievementCountChanged()` — self-referential (hunter ladder)
+- `onStreakMilestone(int days)` — called by StreakService on each new streak day
+- `onThemeUnlocked(String id)` — called by UnlockService when a theme unlocks
+- `onPersonaUnlocked(String id)` — called by PersonaService when a persona unlocks
+- `onStudySessionLogged({totalSessions, sessionMinutes, weeklyMinutesAfterThis, totalMinutesEver, sessionsForCurrentSubject})` — called by StudyLogService after each logged session; drives study-related achievement ladders
+- `onNotificationToggled(String kind)` — called by SettingsScreen when the user enables notifications (`kind`: `'general'` or `'break'`)
+- `onWidgetTapped()` — called by `backgroundWidgetCallback` when the user taps the home-screen widget
+- `onAchievementCountChanged()` — self-referential; called by the unlock listener in `main.dart` to advance the hunter ladder
 
 ## Adding Achievements
 

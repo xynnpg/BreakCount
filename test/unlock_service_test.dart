@@ -26,6 +26,8 @@ void main() {
     StreakService.init();
     await AchievementService.resetForTests();
     AchievementService.init();
+    await UnlockService.resetForTests();
+    UnlockService.init();
   });
 
   group('Theme unlocks', () {
@@ -85,6 +87,68 @@ void main() {
     test('personasUnlockedByAchievement returns the persona gated by it', () {
       expect(UnlockService.personasUnlockedByAchievement('50_mondays'),
           contains('ghost'));
+    });
+  });
+
+  group('Permanent unlock persistence', () {
+    test('recordThemeUnlock persists across init() reload with zero streak', () async {
+      expect(UnlockService.isThemeUnlocked('lavender'), isFalse);
+      await UnlockService.recordThemeUnlock('lavender');
+      expect(UnlockService.isThemeUnlocked('lavender'), isTrue);
+      // Simulate reload (e.g. after restore).
+      UnlockService.init();
+      expect(UnlockService.isThemeUnlocked('lavender'), isTrue,
+          reason: 'should remain unlocked after re-init with streak = 0');
+    });
+
+    test('recordPersonaUnlock persists across init() reload with zero streak', () async {
+      expect(UnlockService.isPersonaUnlocked('nerd'), isFalse);
+      await UnlockService.recordPersonaUnlock('nerd');
+      expect(UnlockService.isPersonaUnlocked('nerd'), isTrue);
+      UnlockService.init();
+      expect(UnlockService.isPersonaUnlocked('nerd'), isTrue,
+          reason: 'should remain unlocked after re-init with streak = 0');
+    });
+
+    test('backup round-trip: pre-seeded storage key unlocks theme on init()', () async {
+      // Simulate a restored backup that contains the permanent-unlock key.
+      await StorageService.saveString('unlocked_themes_v1', '["lavender","forest"]');
+      UnlockService.init();
+      expect(UnlockService.isThemeUnlocked('lavender'), isTrue);
+      expect(UnlockService.isThemeUnlocked('forest'), isTrue);
+      // Streak is still 0 — unlock must come from the persisted set alone.
+      expect(StreakService.currentStreak, 0);
+    });
+
+    test('resetForTests clears permanent sets', () async {
+      await UnlockService.recordThemeUnlock('lavender');
+      await UnlockService.resetForTests();
+      UnlockService.init();
+      expect(UnlockService.isThemeUnlocked('lavender'), isFalse);
+    });
+
+    test('init() backfills themes from longestStreak', () async {
+      // Simulate a user who already has a 7-day streak but no permanent sets.
+      await StreakService.debugSet(7);
+      await UnlockService.resetForTests();
+      UnlockService.init();
+      // Give the unawaited backfill a microtask to complete.
+      await Future<void>.delayed(Duration.zero);
+      expect(UnlockService.isThemeUnlocked('lavender'), isTrue,
+          reason: 'lavender requires streak 7 — should be backfilled');
+      expect(UnlockService.isThemeUnlocked('forest'), isFalse,
+          reason: 'forest requires streak 14 — should not be backfilled at 7');
+    });
+
+    test('init() backfills personas from longestStreak', () async {
+      await StreakService.debugSet(14);
+      await UnlockService.resetForTests();
+      UnlockService.init();
+      await Future<void>.delayed(Duration.zero);
+      expect(UnlockService.isPersonaUnlocked('nerd'), isTrue);   // streak 3
+      expect(UnlockService.isPersonaUnlocked('tired'), isTrue);  // streak 7
+      expect(UnlockService.isPersonaUnlocked('ice'), isTrue);    // streak 14
+      expect(UnlockService.isPersonaUnlocked('gremlin'), isFalse); // streak 21
     });
   });
 }

@@ -132,7 +132,6 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
           EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -200,7 +199,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 13),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
                   ),
@@ -233,7 +232,7 @@ class _ExamFormSheetState extends State<ExamFormSheet> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 13),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
                   ),

@@ -1,6 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+
 import '../app/theme_preset.dart';
 import '../data/personas_data.dart';
 import 'achievement_service.dart';
+import 'storage_service.dart';
 import 'streak_service.dart';
 
 /// Kind of unlock requirement.
@@ -17,17 +23,17 @@ class UnlockRequirement {
   final String achievementId;
 
   const UnlockRequirement.defaultUnlocked()
-      : kind = UnlockKind.defaultUnlocked,
-        streakDays = 0,
-        achievementId = '';
+    : kind = UnlockKind.defaultUnlocked,
+      streakDays = 0,
+      achievementId = '';
 
   const UnlockRequirement.streak(this.streakDays)
-      : kind = UnlockKind.streak,
-        achievementId = '';
+    : kind = UnlockKind.streak,
+      achievementId = '';
 
   const UnlockRequirement.achievement(this.achievementId)
-      : kind = UnlockKind.achievement,
-        streakDays = 0;
+    : kind = UnlockKind.achievement,
+      streakDays = 0;
 
   String humanHint() {
     switch (kind) {
@@ -102,30 +108,114 @@ class UnlockService {
     'robot': UnlockRequirement.achievement('year_legend'),
   };
 
+  // ── Permanent-unlock persistence ─────────────────────────────────────────
+
+  static const String _themesKey = 'unlocked_themes_v1';
+  static const String _personasKey = 'unlocked_personas_v1';
+
+  static Set<String> _permanentThemes = {};
+  static Set<String> _permanentPersonas = {};
+
+  /// Loads persisted permanent unlocks into memory. Call once at startup
+  /// (after StorageService.init) and after a backup restore.
+  static void init() {
+    _permanentThemes = _load(_themesKey);
+    _permanentPersonas = _load(_personasKey);
+    // Backfill any streak-earned unlocks the user already has (handles
+    // existing users and restored backups from before this feature).
+    unawaited(_backfillFromLongestStreak());
+  }
+
+  /// Records any streak-based unlocks the user has already earned but that
+  /// aren't yet in the permanent sets. Idempotent.
+  static Future<void> _backfillFromLongestStreak() async {
+    final best = StreakService.longestStreak;
+    if (best == 0) return;
+    bool changed = false;
+    for (final e in _themeRequirements.entries) {
+      if (e.value.kind == UnlockKind.streak &&
+          e.value.streakDays <= best &&
+          _permanentThemes.add(e.key)) {
+        changed = true;
+      }
+    }
+    for (final e in _personaRequirements.entries) {
+      if (e.value.kind == UnlockKind.streak &&
+          e.value.streakDays <= best &&
+          _permanentPersonas.add(e.key)) {
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    await StorageService.saveString(
+      _themesKey,
+      jsonEncode(_permanentThemes.toList()),
+    );
+    await StorageService.saveString(
+      _personasKey,
+      jsonEncode(_permanentPersonas.toList()),
+    );
+  }
+
+  /// Permanently records a theme unlock (survives streak resets + backup).
+  static Future<void> recordThemeUnlock(String id) async {
+    if (_permanentThemes.contains(id)) return;
+    _permanentThemes.add(id);
+    await StorageService.saveString(
+      _themesKey,
+      jsonEncode(_permanentThemes.toList()),
+    );
+  }
+
+  /// Permanently records a persona unlock (survives streak resets + backup).
+  static Future<void> recordPersonaUnlock(String id) async {
+    if (_permanentPersonas.contains(id)) return;
+    _permanentPersonas.add(id);
+    await StorageService.saveString(
+      _personasKey,
+      jsonEncode(_permanentPersonas.toList()),
+    );
+  }
+
+  @visibleForTesting
+  static Future<void> resetForTests() async {
+    _permanentThemes = {};
+    _permanentPersonas = {};
+    await StorageService.delete(_themesKey);
+    await StorageService.delete(_personasKey);
+  }
+
+  static Set<String> _load(String key) {
+    final raw = StorageService.getString(key);
+    if (raw == null) return {};
+    try {
+      return (jsonDecode(raw) as List).cast<String>().toSet();
+    } catch (_) {
+      return {};
+    }
+  }
+
   // ── Public API ───────────────────────────────────────────────────────────
 
   /// Whether theme [id] is currently unlocked.
   static bool isThemeUnlocked(String id) =>
-      _evaluate(_themeRequirements[id]);
+      _permanentThemes.contains(id) || _evaluate(_themeRequirements[id]);
 
   /// Whether persona [id] is currently unlocked.
   static bool isPersonaUnlocked(String id) {
-    // Default-unlocked personas (no entry in map) are always unlocked.
     final req = _personaRequirements[id];
-    if (req == null) return true;
-    return _evaluate(req);
+    if (req == null) return true; // default-unlocked
+    return _permanentPersonas.contains(id) || _evaluate(req);
   }
 
   /// Human-readable unlock hint for theme [id].
   static String themeUnlockHint(String id) =>
-      (_themeRequirements[id] ??
-              const UnlockRequirement.defaultUnlocked())
+      (_themeRequirements[id] ?? const UnlockRequirement.defaultUnlocked())
           .humanHint();
 
   /// Human-readable unlock hint for persona [id].
   static String personaUnlockHint(String id) =>
-      (_personaRequirements[id] ??
-              const UnlockRequirement.defaultUnlocked())
+      (_personaRequirements[id] ?? const UnlockRequirement.defaultUnlocked())
           .humanHint();
 
   /// All unlocked theme ids.
@@ -140,36 +230,44 @@ class UnlockService {
   /// flipped from locked to unlocked. Useful for surfacing overlays.
   static List<String> themesUnlockedByStreak(int streakDays) {
     return _themeRequirements.entries
-        .where((e) =>
-            e.value.kind == UnlockKind.streak &&
-            e.value.streakDays == streakDays)
+        .where(
+          (e) =>
+              e.value.kind == UnlockKind.streak &&
+              e.value.streakDays == streakDays,
+        )
         .map((e) => e.key)
         .toList();
   }
 
   static List<String> personasUnlockedByStreak(int streakDays) {
     return _personaRequirements.entries
-        .where((e) =>
-            e.value.kind == UnlockKind.streak &&
-            e.value.streakDays == streakDays)
+        .where(
+          (e) =>
+              e.value.kind == UnlockKind.streak &&
+              e.value.streakDays == streakDays,
+        )
         .map((e) => e.key)
         .toList();
   }
 
   static List<String> themesUnlockedByAchievement(String achievementId) {
     return _themeRequirements.entries
-        .where((e) =>
-            e.value.kind == UnlockKind.achievement &&
-            e.value.achievementId == achievementId)
+        .where(
+          (e) =>
+              e.value.kind == UnlockKind.achievement &&
+              e.value.achievementId == achievementId,
+        )
         .map((e) => e.key)
         .toList();
   }
 
   static List<String> personasUnlockedByAchievement(String achievementId) {
     return _personaRequirements.entries
-        .where((e) =>
-            e.value.kind == UnlockKind.achievement &&
-            e.value.achievementId == achievementId)
+        .where(
+          (e) =>
+              e.value.kind == UnlockKind.achievement &&
+              e.value.achievementId == achievementId,
+        )
         .map((e) => e.key)
         .toList();
   }
@@ -182,7 +280,10 @@ class UnlockService {
       case UnlockKind.defaultUnlocked:
         return true;
       case UnlockKind.streak:
-        return StreakService.currentStreak >= req.streakDays;
+        final best = StreakService.longestStreak > StreakService.currentStreak
+            ? StreakService.longestStreak
+            : StreakService.currentStreak;
+        return best >= req.streakDays;
       case UnlockKind.achievement:
         return AchievementService.isUnlocked(req.achievementId);
     }

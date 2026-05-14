@@ -169,6 +169,7 @@ class MoodService {
       fireStreak: fireStreak,
       deadStreak: deadStreak,
       rollercoaster: rollercoaster,
+      totalMoodLogs: history.length,
     );
   }
 

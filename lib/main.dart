@@ -20,6 +20,7 @@ import 'services/storage_service.dart';
 import 'services/achievement_service.dart';
 import 'services/persona_service.dart';
 import 'services/streak_service.dart';
+import 'services/unlock_service.dart';
 import 'services/widget_service.dart';
 import 'utils/debug_log.dart';
 
@@ -51,6 +52,8 @@ Future<void> _maybeAutoBackup() async {
 Future<void> backgroundWidgetCallback(Uri? uri) async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
+  AchievementService.init();
+  unawaited(AchievementService.onWidgetTapped());
   await WidgetService.update();
 }
 
@@ -95,14 +98,29 @@ void main() {
     AppThemeController.init(StorageService.getString(StorageKeys.themeId));
     AchievementService.init();
     StreakService.init();
+    UnlockService.init();
     // Fire-and-forget — record today's open, don't block startup.
     StreakService.recordOpen().then((streak) async {
       // Streak milestone unlocks.
       await AchievementService.onStreakMilestone(streak);
+      // Permanently record any themes/personas unlocked at this streak.
+      for (final id in UnlockService.themesUnlockedByStreak(streak)) {
+        await UnlockService.recordThemeUnlock(id);
+      }
+      for (final id in UnlockService.personasUnlockedByStreak(streak)) {
+        await UnlockService.recordPersonaUnlock(id);
+      }
     });
     // Streak-milestone ladder firing whenever StreakService advances at runtime.
     StreakService.addMilestoneListener((days) {
       AchievementService.onStreakMilestone(days);
+      // Permanently record any themes/personas that just unlocked at this streak.
+      for (final id in UnlockService.themesUnlockedByStreak(days)) {
+        UnlockService.recordThemeUnlock(id);
+      }
+      for (final id in UnlockService.personasUnlockedByStreak(days)) {
+        UnlockService.recordPersonaUnlock(id);
+      }
     });
     // Tick the hunter ladder whenever any achievement unlocks.
     AchievementService.addUnlockListener((_) {

@@ -14,7 +14,7 @@ class PhotoSourceSheet extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
         boxShadow: const [

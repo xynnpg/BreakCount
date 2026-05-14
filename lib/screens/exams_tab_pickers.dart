@@ -48,7 +48,7 @@ class ExamSubjectPicker extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: sel ? subjectColor.withAlpha(18) : Colors.white,
+                      color: sel ? subjectColor.withAlpha(18) : theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: sel ? subjectColor : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
@@ -119,6 +119,7 @@ class ExamTypePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -138,12 +139,12 @@ class ExamTypePicker extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
-                      color: sel ? AppColors.primaryLight : Colors.white,
+                      color: sel ? theme.colorScheme.primary.withAlpha(18) : theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: sel
-                            ? AppColors.primary
-                            : (Theme.of(context).dividerTheme.color ?? AppColors.surfaceBorder),
+                            ? theme.colorScheme.primary
+                            : (theme.dividerTheme.color ?? AppColors.surfaceBorder),
                       ),
                     ),
                     child: Text(
@@ -151,8 +152,8 @@ class ExamTypePicker extends StatelessWidget {
                       style: GoogleFonts.outfit(
                         fontSize: 13,
                         color: sel
-                            ? AppColors.primary
-                            : Theme.of(context).colorScheme.onSurface.withAlpha(200),
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface.withAlpha(200),
                         fontWeight:
                             sel ? FontWeight.w600 : FontWeight.w400,
                       ),
@@ -215,7 +216,7 @@ class ExamFormField extends StatelessWidget {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
           ),

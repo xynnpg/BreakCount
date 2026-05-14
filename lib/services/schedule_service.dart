@@ -121,12 +121,15 @@ class ScheduleService {
   static const String _subjectsKey = 'subjects_data';
 
   /// If [schedule] has any entry starting before 08:00, unlock `early_bird`.
-  /// No-op if already unlocked.
+  /// Also checks `secret_all_subjects` (entries on all 5 weekdays).
   static Future<void> _maybeEarlyBird(Schedule schedule) async {
-    final hasEarly =
-        schedule.entries.any((e) => e.startTime.hour < 8);
-    if (hasEarly) {
-      await AchievementService.onEarlyClass();
+    final hasEarly = schedule.entries.any((e) => e.startTime.hour < 8);
+    if (hasEarly) await AchievementService.onEarlyClass();
+    // secret_all_subjects: at least one entry on each weekday Mon–Fri
+    const weekdays = [1, 2, 3, 4, 5];
+    final coveredDays = schedule.entries.map((e) => e.dayOfWeek).toSet();
+    if (weekdays.every(coveredDays.contains)) {
+      await AchievementService.onAllSubjectsAdded();
     }
   }
 }

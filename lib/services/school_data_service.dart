@@ -36,6 +36,10 @@ class SchoolDataService {
             StorageKeys.schoolYear, result.toJsonString());
         await StorageService.saveString(
             StorageKeys.lastUpdated, DateTime.now().toIso8601String());
+        // Track how many school years have been set (for multi-year achievements)
+        final prev = StorageService.getInt('school_year_count') ?? 0;
+        if (prev == 0) await StorageService.saveInt('school_year_count', 1);
+        else await StorageService.saveInt('school_year_count', prev + 1);
         final breakNotifsEnabled =
             StorageService.getBool(StorageKeys.breakNotificationsEnabled) ??
                 true;

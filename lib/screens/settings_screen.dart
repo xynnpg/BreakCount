@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +22,7 @@ import '../widgets/glassmorphic_card.dart';
 import '../widgets/backup_sheet.dart';
 import '../widgets/theme_picker_grid.dart';
 import '../services/achievement_service.dart';
+import '../services/streak_service.dart';
 import '../services/persona_service.dart';
 import '../data/achievements_data.dart';
 import '../data/personas_data.dart';
@@ -50,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   String _widgetPersona = 'hype';
   bool _liveActivityEnabled = false;
   bool _liveActivityAvailable = false;
+  int _versionTapCount = 0;
 
   @override
   bool get wantKeepAlive => true;
@@ -537,6 +541,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                               onChanged: (v) async {
                                 if (v) {
                                   await NotificationService.requestPermissions();
+                                  unawaited(AchievementService.onNotificationToggled('general'));
                                 }
                                 await StorageService.saveBool(
                                     StorageKeys.notificationsEnabled, v);
@@ -555,6 +560,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                                 await StorageService.saveBool(
                                     StorageKeys.breakNotificationsEnabled, v);
                                 setState(() => _breakNotificationsEnabled = v);
+                                if (v) unawaited(AchievementService.onNotificationToggled('break'));
                                 final SchoolYear? sy =
                                     SchoolDataService.getCached();
                                 if (sy != null) {
@@ -839,6 +845,22 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
 
                     const SizedBox(height: AppSpacing.xxl),
+
+                    // ── Dev Tools (gated behind you_are_a_dev achievement) ─
+                    if (AchievementService.isUnlocked('you_are_a_dev')) ...[
+                      SettingsSectionLabel('Dev Tools'),
+                      GlassmorphicCard(
+                        padding: EdgeInsets.zero,
+                        child: SettingsRow(
+                          icon: Icons.all_inclusive_rounded,
+                          label: 'Unlock Everything',
+                          subtitle: 'Unlock all achievements, themes & personas',
+                          onTap: _unlockEverything,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                    ],
+
                     _buildAbout(),
                     // Dynamic bottom clearance: LimelightNavBar height (64px)
                     // + its vertical padding (8+12=20px) + system bottom inset.
@@ -856,6 +878,25 @@ class _SettingsScreenState extends State<SettingsScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _unlockEverything() async {
+    // Force streak to 365 — satisfies every streak-gated theme/persona.
+    // Mirror StreakService internals since debugSet is test-only.
+    await StorageService.saveInt('streak_current', 365);
+    await StorageService.saveInt('streak_longest', 365);
+    StreakService.currentNotifier.value = 365;
+    StreakService.longestNotifier.value = 365;
+    // Unlock every achievement.
+    for (final a in kAchievements) {
+      await AchievementService.unlock(a.id);
+    }
+    if (mounted) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('🎉 All achievements, themes & personas unlocked!')),
+      );
+    }
   }
 
   Future<void> _showBackupSheet() async {
@@ -965,37 +1006,56 @@ class _SettingsScreenState extends State<SettingsScreen>
     return Center(
       child: Column(
         children: [
-          InkWell(
-            onTap: () => Navigator.pushNamed(context, Routes.changelog),
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.full),
-                border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
-                color: Colors.white,
-                boxShadow: const [AppElevation.low],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.coffee_rounded,
-                      size: 12, color: theme.colorScheme.primary),
-                  const SizedBox(width: 5),
-                  FutureBuilder<PackageInfo>(
-                    future: PackageInfo.fromPlatform(),
-                    builder: (ctx, snap) {
-                      final version = snap.data?.version ?? '2.1.0';
-                      return Text(
-                        'BreakCount v$version',
-                        style: GoogleFonts.outfit(
-                            color: theme.colorScheme.onSurface.withAlpha(120),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500),
-                      );
-                    },
-                  ),
-                ],
+          GestureDetector(
+            onLongPress: () async {
+              if (AchievementService.isUnlocked('you_are_a_dev')) return;
+              setState(() => _versionTapCount++);
+              if (_versionTapCount >= 7) {
+                await AchievementService.unlock('you_are_a_dev');
+                if (mounted) {
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('🖥️ Dev mode unlocked!',
+                          style: GoogleFonts.outfit()),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                }
+              }
+            },
+            child: InkWell(
+              onTap: () => Navigator.pushNamed(context, Routes.changelog),
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  border: Border.all(color: theme.dividerTheme.color ?? AppColors.surfaceBorder),
+                  color: theme.colorScheme.surface,
+                  boxShadow: const [AppElevation.low],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.coffee_rounded,
+                        size: 12, color: theme.colorScheme.primary),
+                    const SizedBox(width: 5),
+                    FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (ctx, snap) {
+                        final version = snap.data?.version ?? '2.1.0';
+                        return Text(
+                          'BreakCount v$version',
+                          style: GoogleFonts.outfit(
+                              color: theme.colorScheme.onSurface.withAlpha(120),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
