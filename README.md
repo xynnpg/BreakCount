@@ -138,7 +138,7 @@ not on the list? the [OpenHolidays API](https://openholidaysapi.org) covers 30+ 
 you need Flutter 3.x (Dart 3.10+) and Android SDK 21+.
 
 ```bash
-git clone https://github.com/your-username/breakcount.git
+git clone https://github.com/xynnpg/breakcount.git
 cd breakcount
 flutter pub get
 flutter run
