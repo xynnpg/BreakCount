@@ -1,24 +1,26 @@
-# Nearby / Mesh System
+# Nearby and Mesh System
 
 ## Overview
 
-BreakCount uses Android Nearby Connections (Bluetooth) for peer-to-peer features: schedule sharing, Vibe Beacon, and achievement compare.
+BreakCount uses Android Nearby Connections (Bluetooth) for peer-to-peer features: schedule sharing, the Vibe Beacon radar, and achievement compare. Everything is local — no server involved.
 
-## MeshService (`lib/services/mesh_service.dart`)
+## MeshService (lib/services/mesh_service.dart)
 
-Core P2P service wrapping `nearby_connections` package.
+Core P2P service wrapping the `nearby_connections` package.
 
 ### Discovery Flow
 
 ```
 startDiscovery() → onPeerFound callback
-    ↓
-User taps peer card
-    ↓
+    |
+    | User taps peer card
+    v
 requestConnection() → onConnectionEstablished
-    ↓
-sendPayload(data) ↔ receivePayload(data)
-    ↓
+    |
+    v
+sendPayload(data) <--> receivePayload(data)
+    |
+    v
 disconnect()
 ```
 
@@ -31,28 +33,26 @@ JSON payload exchanged on connection:
   "type": "handshake",
   "name": "Anonymous Student",
   "persona_id": "hype",
-  "persona_emoji": "🔥",
+  "persona_emoji": "fire",
   "subject_count": 12,
   "entry_count": 35,
-  "unlocked_achievement_ids": ["streak_7", "first_exam", ...]
+  "unlocked_achievement_ids": ["streak_7", "first_exam", "..."]
 }
 ```
 
-The `unlocked_achievement_ids` field enables peer achievement compare (added in v2.1.0).
+The `unlocked_achievement_ids` field is what enables peer achievement compare, added in v2.1.0.
 
 ## Features
 
 ### Schedule Copy
-- Peer card shows subject/entry count
-- "Copy" button pulls their schedule entries to your device
-- Merge/replace dialog if you already have entries
+
+The peer card shows their subject and entry count. Tapping "Copy" pulls their schedule entries to your device. If you already have entries, a merge/replace dialog appears.
 
 ### Vibe Beacon
-- Long-press Vibe card → radar overlay
-- Groups discovered peers by persona
-- Real-time discovery while overlay is open
 
-### Achievement Compare (`PeerAchievementsCompareSheet`)
+Long-press the Vibe card on the home screen to open a radar overlay. It groups discovered peers by persona and updates in real time while the overlay is open.
+
+### Achievement Compare (PeerAchievementsCompareSheet)
 
 Located in `lib/widgets/peer_achievements_compare_sheet.dart`.
 
@@ -64,13 +64,12 @@ Computes three sets from the handshake payload:
 Displayed as a bottom sheet from the nearby users screen.
 
 ### Shake to Share
-- `ShakeService` detects 20 m/s² threshold
-- Opens share overlay when both devices shake simultaneously
-- Uses same Nearby Connections infrastructure
+
+`ShakeService` detects a 20 m/s² threshold on the accelerometer. When both devices shake at roughly the same time, a share overlay opens. Uses the same Nearby Connections infrastructure as everything else.
 
 ## Privacy
 
-- No real names exchanged (anonymous display names)
-- Achievement IDs are opaque strings (no personal data)
-- Opt-in via Settings → Social toggle (`vibeBeaconEnabled`)
-- Bluetooth/Location permissions required
+- No real names are exchanged — display names are anonymous
+- Achievement IDs are opaque strings with no personal data attached
+- The Vibe Beacon is opt-in via Settings > Social (`vibeBeaconEnabled`)
+- Bluetooth and Location permissions are required and requested at the point of use

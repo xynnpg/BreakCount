@@ -2,23 +2,28 @@
 
 ## Overview
 
-Four widget sizes (2×1, 2×2, 4×1, 4×2) powered by native Android `AppWidgetProvider` + the `home_widget` Flutter package.
+Four widget sizes (2x1, 2x2, 4x1, 4x2) powered by native Android `AppWidgetProvider` and the `home_widget` Flutter package. Colors follow the active theme and persona tint automatically.
 
 ## Architecture
 
 ```
 Flutter (WidgetService.update())
-    ↓ writes key-value pairs
+    |
+    | writes key-value pairs
+    v
 HomeWidget SharedPreferences
-    ↓ read by
+    |
+    | read by
+    v
 Android BreakCountWidgetProvider (Kotlin)
-    ↓ applies to
+    |
+    v
 RemoteViews → AppWidgetManager.updateAppWidget()
 ```
 
 ## Data Payload
 
-`WidgetService.update()` writes these keys:
+`WidgetService.update()` writes these keys to HomeWidget SharedPreferences:
 
 | Key | Type | Description |
 |-----|------|-------------|
@@ -28,7 +33,7 @@ RemoteViews → AppWidgetManager.updateAppWidget()
 | `days_until_summer` | int | Days to year end |
 | `is_on_break` | bool | Currently on break |
 | `vibe_emoji` | String | Persona emoji |
-| `vibe_copy` | String | Mood-aware one-liner |
+| `vibe_copy` | String | Mood-aware one-liner from persona copy |
 | `current_class` | String? | Active class name |
 | `next_class` | String? | Next class name |
 | `theme_bg_hex` | String | Theme background (#RRGGBB) |
@@ -40,7 +45,7 @@ RemoteViews → AppWidgetManager.updateAppWidget()
 
 ## Theme Application (Kotlin)
 
-`BreakCountWidgetProvider.kt` reads theme colors and applies:
+`BreakCountWidgetProvider.kt` reads theme colors and applies them:
 
 - `widget_root` background → `theme_surface_hex`
 - `tv_days`, `tv_break_label` text → `theme_primary_hex`
@@ -51,15 +56,16 @@ RemoteViews → AppWidgetManager.updateAppWidget()
 
 - `res/layout/breakcount_widget_2x1.xml` — horizontal pill
 - `res/layout/breakcount_widget_2x2.xml` — square card with progress ring
-- `res/layout/breakcount_widget_4x1.xml` — wide bar (also used by 4×2)
+- `res/layout/breakcount_widget_4x1.xml` — wide bar (also used by 4x2)
 
 All layouts have `android:id="@+id/widget_root"` on the root `LinearLayout` for programmatic background coloring.
 
 ## Update Triggers
 
-`WidgetService.update()` is called:
+`WidgetService.update()` is called in these situations:
+
 - On app startup (fire-and-forget)
-- When theme changes (`AppThemeController.notifier` listener)
-- When persona changes (`PersonaService.currentNotifier` listener)
+- When the theme changes (`AppThemeController.notifier` listener)
+- When the persona changes (`PersonaService.currentNotifier` listener)
 - When an achievement unlocks (`AchievementService` unlock listener)
 - On background widget interaction (`backgroundWidgetCallback`)

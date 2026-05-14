@@ -1,4 +1,4 @@
-# Architecture Overview
+# Architecture
 
 ## Project Structure
 
@@ -40,12 +40,12 @@ lib/
 
 ## State Management
 
-BreakCount uses a lightweight approach — no external state management package:
+No external state management package. The app uses a lightweight approach that's easy to follow:
 
-- **`ValueNotifier<T>`** for reactive state (theme, persona tint, streak, study log revision)
-- **`StorageService`** (SharedPreferences wrapper) for persistence
-- **`setState()`** in StatefulWidgets for local UI state
-- **Listeners** wired in `main.dart` for cross-cutting concerns
+- `ValueNotifier<T>` for reactive state (theme, persona tint, streak, study log revision)
+- `StorageService` (SharedPreferences wrapper) for persistence
+- `setState()` in StatefulWidgets for local UI state
+- Listeners wired in `main.dart` for cross-cutting concerns
 
 Key notifiers:
 
@@ -62,9 +62,9 @@ Key notifiers:
 
 ```
 User action → Service method → StorageService.save() → ValueNotifier.value = x
-                                                              ↓
+                                                              |
                                                     Listeners fire
-                                                              ↓
+                                                              |
                                               Widget rebuilds / side effects
                                               (e.g., WidgetService.update())
 ```
@@ -76,7 +76,7 @@ User action → Service method → StorageService.save() → ValueNotifier.value
 3. `StorageService.init()` — loads SharedPreferences
 4. `AppThemeController.init()` — restores saved theme
 5. `AchievementService.init()` — loads unlock state
-6. `StreakService.init()` + `recordOpen()` — daily streak
+6. `StreakService.init()` + `recordOpen()` — daily streak check-in
 7. `UnlockService.init()` — loads persisted theme/persona unlocks, backfills from longest streak
 8. `PersonaService.init()` — restores active persona
 9. Cross-cutting listeners wired (achievement→widget, persona→widget, theme→widget, streak→achievement, streak→unlock)
@@ -85,7 +85,10 @@ User action → Service method → StorageService.save() → ValueNotifier.value
 
 ## Key Patterns
 
-- **Fire-and-forget:** Non-critical operations (widget updates, analytics, auto-backup) never block startup
-- **Graceful degradation:** Every service wraps platform calls in try/catch; failures are logged, never propagated
-- **Additive architecture:** New features (themes, personas, achievements) plug into existing notifier/listener infrastructure without rewrites
-- **Permanent unlock persistence:** `UnlockService` stores earned unlocks independently of current streak so they survive streak resets and backup restores
+**Fire-and-forget:** Non-critical operations like widget updates, analytics, and auto-backup never block startup. They run in the background and failures are swallowed silently.
+
+**Graceful degradation:** Every service wraps platform calls in try/catch. Failures are logged to Crashlytics but never propagated to the UI. The app keeps working even if a service fails.
+
+**Additive architecture:** New features (themes, personas, achievements) plug into the existing notifier/listener infrastructure without requiring rewrites. Adding a new theme is 3 lines of code.
+
+**Permanent unlock persistence:** `UnlockService` stores earned unlocks independently of the current streak, so they survive streak resets and backup restores. On init, it backfills any unlocks the user earned but that aren't yet in the persistent set.

@@ -4,142 +4,138 @@
 
 # BreakCount
 
-### The student app that counts down to your next school break — so you don't have to.
+### a student app that counts down to your next break — and somehow became a lot more than that.
 
 [![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://breakcount.tech)
 [![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg?style=for-the-badge)](LICENSE)
 
-**[🌐 breakcount.tech](https://breakcount.tech)** · **v2.1.0**
+**[breakcount.tech](https://breakcount.tech)** · **v2.1.1**
 
 </div>
 
 ---
 
-## What is BreakCount?
+## why does this exist?
 
-BreakCount started as a simple "how many days until break?" app and grew into a full student toolkit. It handles your schedule, tracks your exams, backs up your data to Google Drive, and even reads a printed timetable photo with AI — all without an account or subscription.
+i was sitting in class one day and genuinely could not remember how many days were left until break. i checked my phone, couldn't find a quick answer, and thought — someone should just make an app that shows the number. so i did.
 
-It's built by a student, for students. No ads, no tracking, no nonsense.
+then i added a schedule because i kept forgetting what class was next. then exams because i kept forgetting those too. then themes, personas, achievements, AI timetable scanning, home screen widgets, and a lock-screen countdown. at some point it became a real app.
 
----
-
-## Features
-
-### 📅 Countdown
-The main screen shows a big countdown to your next school break. Tap the number to cycle through **days → hours → minutes → seconds → milliseconds**. A school year progress ring shows exactly where you are in the year, and a timeline lists every upcoming break.
-
-Two header icons at the top open dedicated full-view screens:
-- **✨ Vibe** — persona gallery, mood calendar, nearby beacon, recap history
-- **🏆 Achievements** — XP/level header, daily quests, rarity-sorted gallery
-
-When a break starts, a **break-reveal animation** plays: confetti burst + persona-flavored full-screen message.
-
-### 🎨 Themes (10+)
-6 default themes always available: **Coffee** ☕, **Midnight** 🌙, **Mint** 🌿, **Sakura** 🌸, **Ocean** 🌊, **Sunset** 🌇.
-
-11 more unlock via daily streak milestones and achievement triggers: Lavender, Forest, Aurora, Cosmic, AMOLED, Zen, Mono, Neon, Paper, Vapor, Solarized. Streak gates range from 7 to 365 consecutive days.
-
-Home-screen widgets automatically follow the active theme colors.
-
-### 🎭 30 Personas
-Pick a persona and the whole app follows — copy, colors, confetti, widgets. Each persona has unique text for every countdown range, break reveals, and weekly recaps.
-
-**Base (always unlocked):** Hype 🔥, Chill 😎, Dramatic 🎭, Sarcastic 🙃
-
-**Unlockable (22 more):** Ghost 👻, Sage 🧙, Menace 😈, Zen 🧘, Nerd 🤓, Tired 🥱, Ice 🧊, Gremlin 😈, Philosopher 🧐, Goblin 👺, Cloud ☁️, Volcano 🌋, Sloth 🦥, Storm ⛈️, Sprout 🌱, Moon 🌙, Star ⭐, Phoenix 🦅, Sunflower 🌻, Jester 🃏, Monk ☸️, Rebel 🤘, Hacker 💻, Chef 👨‍🍳, Pirate 🏴‍☠️, Robot 🤖
-
-Unlock via streak milestones and achievement triggers.
-
-### 🏆 Achievements & XP (100+)
-100+ achievements across 8 categories: **School Progress**, **Monday Club**, **Exams & Schedule**, **Break Milestones**, **Power User**, **Streaks**, **Themes**, **Personas**.
-
-Rarities: Bronze (25 XP) → Silver (75 XP) → Gold (200 XP) → Platinum (500 XP) → Secret (750 XP).
-
-**XP/Level system** with 10 ranks: Newcomer → Rookie → Survivor → Veteran → Master → Legend → Mythic → Ascendant → Transcendent → Eternal.
-
-**Daily quests:** 3 bite-size tasks refresh at midnight, granting XP on completion.
-
-**Gallery features:** rarity-sorted grid, filter chips (All / Unlocked / Locked / Secret / per-category), search, detail sheets with progress bars, animated rarity shine on unlocked cards.
-
-**Social:** shareable achievement cards (1080×1920 PNG), peer achievement compare over Nearby Connections.
-
-### 🗓️ Weekly Schedule
-Full Monday–Friday timetable grid with color-coding, room info, and A/B week rotation. Shows current/next class on the home screen. Each subject is auto-tagged with an importance level based on your country and school profile.
-
-### 📝 Exams & Tests Tracker
-Add exams with subject, date, type (quiz, midterm, final, presentation), and optional notes. Set reminders at various intervals. Past exams auto-hide. Export any exam to your phone's calendar.
-
-### 🤖 AI Timetable Scan + Offline OCR
-Point your camera at a printed timetable and BreakCount parses it automatically.
-
-**Offline first:** ML Kit text recognition tries to parse locally before calling any API. If confident (≥20 entries, ≥60% confidence), it skips the cloud call entirely — saving your quota and working without internet.
-
-**Cloud providers (fallback):**
-- **Groq Llama 4** — free key from [console.groq.com](https://console.groq.com)
-- **No key?** Built-in proxy gives **5 free scans/day** with zero setup
-
-Full review screen lets you edit or swipe-delete entries before saving.
-
-### 📊 Stats Deep-Dive
-Four chart sections powered by `fl_chart`:
-- **Weekly hours** — bar chart of scheduled hours per subject, with logged study sessions overlaid
-- **Subject distribution** — pie chart from your timetable
-- **Mood distribution** — 7d/30d toggle from mood history
-- **Unlock pace** — line chart of achievement unlocks over 60 days
-
-**Study log:** tap the FAB to log "I studied X minutes of [subject]". Logged sessions overlay on the weekly hours chart and tick study-related achievements. All-time totals (minutes, sessions) are tracked and exposed to the achievement ladder.
-
-### 📱 Lock-Screen Countdown (Android 14+)
-Optional persistent notification showing your break countdown directly on the lock screen. Uses a Chronometer widget for battery-efficient live ticking. Toggle in Settings → Notifications.
-
-### ✨ The Vibe System
-Your persona shows as a **Vibe card** on the countdown screen with a live mood emoji (💀 → 🤩 based on break proximity, with Friday/Monday adjustments).
-
-- **Long-press** the Vibe card → Vibe Beacon radar (groups nearby students by persona)
-- **Share your Vibe Card** → 1080×1920 PNG with persona, rank, mood streak, top achievements
-- **Weekly Vibe Recap** → Sunday 19:00 persona-tuned one-liner (AI-generated if Groq key set)
-
-### 📳 Shake to Share
-Shake your phone near a classmate's and BreakCount opens a share sheet to exchange schedules over Bluetooth — no Wi-Fi, no QR codes, no accounts.
-
-### 🏠 Home Screen Widgets
-Four sizes (2×1, 2×2, 4×1, 4×2) showing countdown, break name, progress, and current class. **Theme-aware:** background and text colors follow your active theme and persona tint.
-
-### ☁️ Google Drive Backup
-Sign in with Google to back up everything to your Drive's private app data folder. Invisible to other Drive files. Restore anytime with one tap. Supports auto-backup (daily/weekly/monthly).
-
-### 🔔 Reminders & Notifications
-Local exam reminders + break start/end alerts. Firebase push for app announcements. Achievement unlock notifications.
-
-### 📋 In-App Changelog
-Tap the version badge at the bottom of Settings to open a full-screen changelog viewer. Renders `CHANGELOG.md` with a minimal theme-aware formatter — no extra dependencies.
+no account. no subscription. no ads. just open it and see how long you have to survive.
 
 ---
 
-## Supported Countries
+## what's inside
 
-School year data is bundled locally — 33+ countries available offline, no internet needed.
+### the countdown
 
-Australia · Austria · Belgium · Brazil · Canada · Croatia · Czech Republic · Denmark · Estonia · Finland · France · Germany · Greece · Hungary · Ireland · Italy · Japan · Latvia · Lithuania · Luxembourg · Mexico · Netherlands · Norway · Poland · Portugal · Romania · Slovakia · Slovenia · Spain · Sweden · Switzerland · Turkey · United Kingdom · United States
+the main screen is just a big number — days until your next break. tap it to switch to hours, minutes, seconds, or milliseconds if you're feeling dramatic. a progress ring wraps around it showing where you are in the school year, and below that is a full timeline of every break coming up.
 
-> Don't see your country? The [OpenHolidays API](https://openholidaysapi.org) covers 30+ additional countries and kicks in automatically as a fallback.
+two icons at the top open the two big side screens:
+- **Vibe** — your persona card, mood calendar, nearby students, weekly recap history
+- **Achievements** — XP bar, daily quests, the full achievement gallery
+
+when a break actually starts, the app does a whole thing — confetti, full-screen message in your persona's voice. it's genuinely satisfying.
+
+### themes
+
+6 themes are available from day one: Coffee, Midnight, Mint, Sakura, Ocean, Sunset.
+
+11 more unlock as your streak grows: Lavender, Forest, Aurora, Cosmic, AMOLED, Zen, Mono, Neon, Paper, Vapor, Solarized. the streak gates go from 7 days up to 365, so some of them take real dedication. home screen widgets automatically pick up your active theme — no extra setup needed.
+
+### personas
+
+there are 30 personas. pick one and the whole app shifts personality — the text, the colors, the confetti style, even what the widget says. every persona has its own lines for every countdown range, break reveals, and weekly recaps. it's not just a color swap, the whole voice changes.
+
+**always unlocked:** Hype, Chill, Dramatic, Sarcastic
+
+**unlock through streaks and achievements:** Ghost, Sage, Menace, Zen, Nerd, Tired, Ice, Gremlin, Philosopher, Goblin, Cloud, Volcano, Sloth, Storm, Sprout, Moon, Star, Phoenix, Sunflower, Jester, Monk, Rebel, Hacker, Chef, Pirate, Robot
+
+### achievements and XP
+
+100+ achievements across 8 categories: School Progress, Monday Club, Exams & Schedule, Break Milestones, Power User, Streaks, Themes, Personas.
+
+four rarities: Bronze (25 XP), Silver (75 XP), Gold (200 XP), Platinum (500 XP). there are also Secret achievements worth 750 XP each — you have to figure those out yourself.
+
+10 XP levels: Newcomer, Rookie, Survivor, Veteran, Master, Legend, Mythic, Ascendant, Transcendent, Eternal.
+
+3 daily quests refresh at midnight. the gallery has filter chips, search, detail sheets with progress bars, and a shine animation on unlocked cards. you can export achievement cards as 1080x1920 PNGs or compare your collection with a nearby friend over Bluetooth.
+
+### schedule
+
+full Monday–Friday timetable with color-coded subjects, room numbers, and A/B week rotation. your current class and next class show up right on the home screen. subjects get auto-tagged with an importance level based on your country and school type.
+
+### exams
+
+add an exam with subject, date, type (quiz, midterm, final, presentation), and notes. set a reminder. past exams disappear on their own. export to your phone's calendar if you want it there too.
+
+### AI timetable scan
+
+take a photo of your printed timetable and the app tries to read it. it runs ML Kit offline first — if it gets 20+ entries at 60%+ confidence, it never touches the internet. if it's not confident enough, it falls back to Groq Llama 4.
+
+- **have a Groq key?** add it in settings, free from [console.groq.com](https://console.groq.com)
+- **no key?** the built-in proxy gives you 5 free scans a day, no setup needed
+
+after scanning you get a review screen to fix anything before it saves.
+
+### stats
+
+four charts: weekly hours per subject (bar), subject distribution (pie), mood over 7 or 30 days, and achievement unlock pace over 60 days. tap the FAB to log a study session — it overlays on the weekly chart and counts toward study achievements.
+
+### lock-screen countdown (Android 14+)
+
+a persistent notification that ticks down live on your lock screen. uses a Chronometer so it doesn't drain your battery. turn it on in Settings > Notifications.
+
+### vibe
+
+your persona shows as a card on the home screen with a live mood based on how close break is. Friday and Monday get their own adjustments because those days hit different.
+
+- long-press the card to open the Vibe Beacon — a radar that shows nearby students grouped by persona
+- share your Vibe Card as a 1080x1920 PNG
+- every Sunday at 19:00 you get a Weekly Vibe Recap — a one-liner in your persona's voice, AI-generated if you have a Groq key
+
+### shake to share
+
+both phones need BreakCount open and Bluetooth on. shake at the same time and a share sheet opens to swap schedules. no Wi-Fi, no QR codes, no accounts.
+
+### home screen widgets
+
+four sizes: 2x1, 2x2, 4x1, 4x2. shows countdown, break name, progress, and current class. colors follow your theme automatically.
+
+### Google Drive backup
+
+sign in with Google and your data backs up to your Drive's private app folder — invisible to everything else in your Drive. restore with one tap. auto-backup runs daily, weekly, or monthly, your choice.
+
+### notifications
+
+exam reminders, break start/end alerts, achievement unlocks, and Firebase push for announcements.
+
+### in-app changelog
+
+tap the version number at the bottom of Settings to read the full changelog. renders CHANGELOG.md with a theme-aware formatter.
 
 ---
 
-## Getting Started
+## countries
 
-### Download
+school year data is bundled in the app — 33+ countries, works offline.
 
-Available on **[Google Play](https://breakcount.tech)** and as a direct APK at **[breakcount.tech](https://breakcount.tech)**.
+Australia, Austria, Belgium, Brazil, Canada, Croatia, Czech Republic, Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Ireland, Italy, Japan, Latvia, Lithuania, Luxembourg, Mexico, Netherlands, Norway, Poland, Portugal, Romania, Slovakia, Slovenia, Spain, Sweden, Switzerland, Turkey, United Kingdom, United States
 
-> BreakCount is **Android only** (5.0+).
+not on the list? the [OpenHolidays API](https://openholidaysapi.org) covers 30+ more and kicks in automatically.
 
-### Build from Source
+---
 
-**Requirements:**
-- Flutter 3.x SDK (Dart 3.10+)
-- Android SDK 21+ (Android 5.0 or newer)
+## getting started
+
+### download
+
+[Google Play](https://breakcount.tech) or direct APK at [breakcount.tech](https://breakcount.tech). Android only (5.0+).
+
+### build it yourself
+
+you need Flutter 3.x (Dart 3.10+) and Android SDK 21+.
 
 ```bash
 git clone https://github.com/your-username/breakcount.git
@@ -149,115 +145,106 @@ flutter run
 ```
 
 ```bash
-# Release APK
+# release APK
 flutter build apk --release
 
-# Release AAB (for Play Store)
+# Play Store bundle
 flutter build appbundle --release
 ```
 
 ---
 
-## Tutorial
+## how to use it
 
-### First Launch
-1. Intro carousel → pick country → pick school profile → fetch data → optional Google sign-in → grant permissions → countdown live
+**first launch:** intro carousel → pick country → pick school profile → fetch data → optional Google sign-in → grant permissions → you're live.
 
-### Schedule Setup
-**Manual:** Schedule tab → + → add subject → assign time slots
-**AI Scan:** Schedule tab → camera icon → photo of timetable → review → confirm
+**schedule:** Schedule tab → + → add subject → assign time slots. or use the camera icon to scan a photo.
 
-### Exams
-Exams tab → + → fill subject/date/type → set reminder → done
+**exams:** Exams tab → + → fill it in → set a reminder → done.
 
-### Shake to Share
-Both phones: BreakCount open + Bluetooth on → shake simultaneously → share/import
+**shake to share:** both phones open, Bluetooth on, shake at the same time.
 
-### Widgets
-Long-press home screen → Widgets → BreakCount → pick size → drag
+**widgets:** long-press home screen → Widgets → BreakCount → pick a size.
 
-### Backup
-Settings → Backup & Restore → sign in → Back Up Now / Restore
+**backup:** Settings → Backup & Restore → sign in → Back Up Now.
 
-### Themes
-Settings → Theme → tap any unlocked swatch (locked ones show streak requirement)
+**themes:** Settings → Theme → tap a swatch. locked ones show what you need to unlock them.
 
 ---
 
-## Privacy
+## privacy
 
-No accounts required. No servers storing your data.
+no accounts, no servers holding your data.
 
-| Data | Where it lives |
-|------|---------------|
-| Schedule, exams, reminders | Your device (local storage) |
-| API keys | Your device only |
-| School year data | Bundled in the app + optional API fetch |
-| Backup | Your own Google Drive (private app folder) |
-| Analytics | Anonymous events via Firebase Analytics |
-| Crashes | Firebase Crashlytics (no personal data) |
+| data | where it lives |
+|------|----------------|
+| schedule, exams, reminders | your device |
+| API keys | your device only |
+| school year data | bundled in the app |
+| backup | your own Google Drive (private folder) |
+| analytics | anonymous events via Firebase |
+| crashes | Firebase Crashlytics, no personal data |
 
 [Privacy Policy](https://breakcount.tech/privacy.html) · [help@breakcount.tech](mailto:help@breakcount.tech)
 
 ---
 
-## Permissions
+## permissions
 
-| Permission | Why |
-|-----------|-----|
-| Camera | AI timetable photo scan |
-| Photo library | Picking an existing timetable image |
-| Notifications | Exam/break reminders, achievement unlocks, lock-screen countdown |
-| Bluetooth + Location | Shake-to-share, nearby students |
-| Foreground Service | Lock-screen countdown (Android 14+) |
+| permission | why |
+|------------|-----|
+| Camera | timetable scan |
+| Photo library | picking an existing timetable image |
+| Notifications | reminders, achievement unlocks, lock-screen countdown |
+| Bluetooth + Location | shake-to-share, nearby students |
+| Foreground Service | lock-screen countdown (Android 14+) |
 
-All permissions are optional — the app works without them, just with those features disabled.
-
----
-
-## Tech Stack
-
-Built with Flutter. Key pieces:
-
-- **AI:** Groq Llama 4 + Cloudflare Worker proxy + ML Kit offline OCR
-- **Charts:** `fl_chart` (weekly hours, subject pie, mood, unlock pace)
-- **P2P:** Android Nearby Connections (Bluetooth)
-- **Backup:** Google Drive API v3 (appDataFolder scope)
-- **Push:** Firebase Cloud Messaging + local notifications
-- **Crash reporting:** Firebase Crashlytics
-- **Home screen widgets:** Native Android `AppWidgetProvider` + `home_widget`
-- **Lock-screen:** Foreground service with `Chronometer` notification
-- **Shake detection:** `sensors_plus` accelerometer (20 m/s² threshold)
-- **Storage:** SharedPreferences via a typed service wrapper
-- **Version:** `package_info_plus` for dynamic About card
+all optional. the app works fine without any of them, those features just won't be available.
 
 ---
 
-## Documentation
+## tech stack
 
-Detailed architecture and system documentation lives in [`docs/`](docs/README.md):
+Flutter app with:
 
-- [Architecture Overview](docs/architecture.md)
-- [Services Reference](docs/services.md)
-- [Theme System](docs/themes.md)
+- AI: Groq Llama 4 + Cloudflare Worker proxy + ML Kit offline OCR
+- Charts: fl_chart
+- P2P: Android Nearby Connections
+- Backup: Google Drive API v3 (appDataFolder)
+- Push: Firebase Cloud Messaging + local notifications
+- Crash reporting: Firebase Crashlytics
+- Widgets: native Android AppWidgetProvider + home_widget
+- Lock-screen: foreground service with Chronometer
+- Shake: sensors_plus at 20 m/s² threshold
+- Storage: SharedPreferences via typed service wrapper
+
+---
+
+## docs
+
+full architecture and technical docs are in [docs/](docs/README.md):
+
+- [Architecture](docs/architecture.md)
+- [Services](docs/services.md)
+- [Themes](docs/themes.md)
 - [Achievements & XP](docs/achievements.md)
 - [Personas](docs/personas.md)
-- [Home Screen Widgets](docs/widgets.md)
+- [Widgets](docs/widgets.md)
 - [AI Scan & OCR](docs/ai-scan.md)
-- [Lock-Screen Live Activity](docs/live-activity.md)
+- [Lock-Screen](docs/live-activity.md)
 - [Nearby / Mesh](docs/nearby.md)
 
 ---
 
-## Support the Project
+## support
 
-If BreakCount saves you from showing up unprepared to an exam, consider [buying me a coffee ☕](https://buymeacoffee.com/xynnpg).
+if BreakCount saved you from showing up to an exam you forgot about, consider [buying me a coffee](https://buymeacoffee.com/xynnpg).
 
 ---
 
 <div align="center">
 
-Made for students, by a student.
+made for students, by a student.
 
 **[breakcount.tech](https://breakcount.tech)** · [help@breakcount.tech](mailto:help@breakcount.tech)
 
